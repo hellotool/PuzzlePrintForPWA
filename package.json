@@ -1,8 +1,8 @@
 {
-  "name": "snap-proof-print-helper",
+  "name": "puzzle-print",
   "version": "0.1.0",
   "description": "Print multiple transfer record diagrams, e-commerce order diagrams, and so on in a voucher style onto paper.",
-  "homepage": "https://hellotool.github.io/SnapProofPrintHelperForPWA/",
+  "homepage": "https://hellotool.github.io/PuzzlePrintForPWA/",
   "license": "Apache-2.0",
   "author": {
     "name": "Jesse205",
@@ -11,10 +11,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitee.com/HelloTool/SnapProofPrintHelperForPWA.git"
+    "url": "https://gitee.com/hellotool/PuzzlePrintForPWA.git"
   },
   "private": true,
   "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=26"
+  },
   "type": "module",
   "licenses": [
     {
@@ -30,9 +33,9 @@
     "dev:tauri:frontend": "rsbuild dev --environment tauri",
     "dev:tauri": "tauri dev",
     "preview:browser": "rsbuild preview  --environment browser",
-    "check": "biome check",
-    "format": "biome format",
-    "docs:generateOsNotices": "tsx ./scripts/docs/generate_os_notices.ts"
+    "check": "biome check && rumdl check",
+    "format": "biome format && rumdl fmt",
+    "docs:generateNotices": "tsx ./scripts/notices/generate.ts"
   },
   "dependencies": {
     "@material/tooltip": "^14.0.0",
@@ -44,27 +47,28 @@
     "@suid/material": "^0.19.0",
     "@suid/system": "^0.14.0",
     "@suid/types": "^0.8.0",
-    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/api": "^2.12.1",
     "i18next": "^26.4.2",
     "nanoid": "^6.0.1",
-    "solid-js": "^1.9.7",
-    "workbox-window": "^7.3.0"
+    "solid-js": "^1.9.15",
+    "workbox-window": "^7.4.1"
   },
   "devDependencies": {
     "@aaroon/workbox-rspack-plugin": "^1.0.1",
-    "@biomejs/biome": "^2.5.14",
-    "@rsbuild/core": "^2.2.9",
+    "@biomejs/biome": "^2.5.15",
+    "@rsbuild/core": "^2.2.11",
     "@rsbuild/plugin-babel": "^2.1.0",
     "@rsbuild/plugin-sass": "^2.0.1",
     "@rsbuild/plugin-solid": "^1.2.2",
     "@tauri-apps/cli": "^2.11.5",
     "@types/license-checker": "^25.0.6",
-    "@types/node": "^24.19.0",
-    "@types/react": "^19.1.2",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "csstype": "^3.2.3",
     "license-checker": "^25.0.1",
+    "rumdl": "^0.2.78",
     "tsx": "^4.19.4",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }

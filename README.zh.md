@@ -2,7 +2,7 @@
 
 <img src="./assets/images/icon.svg" width="192" height="192" alt="应用图标">
 
-# 哈兔拼图打印
+# 拼图打印
 
 **仓库**：
 [![Gitee 主仓库](https://img.shields.io/badge/Gitee-主仓库-C71D23?logo=gitee)][repository-gitee]
@@ -24,10 +24,10 @@ _该应用程序目前仅支持中文_。
 打印多张图片在同一张纸上。
 
 ![哈兔工具 - 实验性项目](https://img.shields.io/badge/哈兔工具-实验性项目-2196f3)
-[![Apache 2.0 许可证](https://img.shields.io/github/license/hellotool/SnapProofPrintHelperForPWA?label=许可证)](./LICENSE)
+[![Apache 2.0 许可证](https://img.shields.io/github/license/hellotool/PuzzlePrintForPWA?label=许可证)](./LICENSE)
 
-![GitHub - Stars](https://img.shields.io/github/stars/hellotool/SnapProofPrintHelperForPWA?style=flat&logo=github)
-[![Gitee - Stars](https://gitee.com/hellotool/SnapProofPrintHelperForPWA/badge/star.svg?theme=dark)][stargazers-gitee]
+![GitHub - Stars](https://img.shields.io/github/stars/hellotool/PuzzlePrintForPWA?style=flat&logo=github)
+[![Gitee - Stars](https://gitee.com/hellotool/PuzzlePrintForPWA/badge/star.svg?theme=dark)][stargazers-gitee]
 
 ## 特性
 
@@ -53,6 +53,12 @@ TODO
 
 - [Gitee 发行版][release-gitee]
 - [GitHub 发行版][release-github]
+
+> [!NOTE]
+> 本应用的前身是“快照凭证打印助手”，现已更名为“哈兔拼图打印”。
+> 由于应用的标识（identifier）已经改变，新版不会覆盖旧版，也不会自动升级旧版。
+> 如果您已经安装过旧版，可以放心在“设置 > 应用”中将其卸载，再安装新版；两者互不影响。
+> 如果您把旧版作为 PWA 安装到了桌面，请在浏览器中卸载旧站点后，重新从上面的 [Web 版][web-app] 添加。
 
 ## 使用方法
 
@@ -85,7 +91,7 @@ TODO
 
 ## 开发与贡献
 
-请参阅[《开发指南》](./docs/dev/README.md)与[《贡献指南》](./docs/CONTRIBUTING.md)。
+请参阅[《开发指南》](./docs/dev/README.md)与[《贡献指南》](./CONTRIBUTING.md)。
 
 ## 许可证
 
@@ -93,7 +99,7 @@ TODO
 
 ## 第三方声明
 
-本项目使用了第三方开源代码，您可以在 [声明文件](./docs/legal/os_notices.md) 中查看详细信息。
+本项目使用了第三方开源代码，您可以在 [声明文件](./NOTICES.zh-CN.md) 中查看详细信息。
 
 Chromebook、ChromeOS 和 ChromeOS 徽标是 Google LLC 的商标。
 
@@ -103,9 +109,9 @@ Chromebook、ChromeOS 和 ChromeOS 徽标是 Google LLC 的商标。
 版权所有 © 2025-2026 杰西 205
 </div>
 
-[repository-gitee]: https://gitee.com/HelloTool/SnapProofPrintHelperForPWA
-[repository-github]: https://github.com/HelloTool/SnapProofPrintHelperForPWA
-[release-gitee]: https://gitee.com/HelloTool/SnapProofPrintHelperForPWA/releases
-[release-github]: https://github.com/HelloTool/SnapProofPrintHelperForPWA/releases
-[web-app]: https://hellotool.github.io/SnapProofPrintHelperForPWA/
-[stargazers-gitee]: https://gitee.com/hellotool/SnapProofPrintHelperForPWA/stargazers
+[repository-gitee]: https://gitee.com/hellotool/PuzzlePrintForPWA
+[repository-github]: https://github.com/hellotool/PuzzlePrintForPWA
+[release-gitee]: https://gitee.com/hellotool/PuzzlePrintForPWA/releases
+[release-github]: https://github.com/hellotool/PuzzlePrintForPWA/releases
+[web-app]: https://hellotool.github.io/PuzzlePrintForPWA/
+[stargazers-gitee]: https://gitee.com/hellotool/PuzzlePrintForPWA/stargazers

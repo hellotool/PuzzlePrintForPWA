@@ -1,0 +1,48 @@
+# $schema: https://json.schemastore.org/rumdl.json
+
+# https://rumdl.dev/global-settings/
+exclude = ["node_modules", "dist", "src-tauri/target"]
+flavor = "gfm"
+
+[line-length]
+enabled = false
+
+[no-inline-html]
+enabled = false
+
+[first-line-heading]
+enabled = false
+
+[no-space-in-code]
+enabled = false
+
+[link-image-reference-definitions]
+enabled = false
+
+[no-emphasis-as-heading]
+punctuation = ".,;:!?。，；：！？"
+
+[ul-style]
+style = "dash"
+
+[ul-indent]
+indent = 3
+style = "fixed"
+
+[ol-prefix]
+style = "ordered"
+
+[no-hard-tabs]
+ignore-code-languages = ["text"]
+
+[blanks-around-fences]
+list_items = false
+
+[code-block-style]
+style = "fenced"
+
+[code-fence-style]
+style = "backtick"
+
+[table-pipe-style]
+style = "leading_and_trailing"

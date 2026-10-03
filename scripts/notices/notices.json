@@ -1,0 +1,10 @@
+{
+  "notices": [
+    {
+      "name": "Chromium",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/chromium/chromium",
+      "copyrights": ["Copyright 2015 The Chromium Authors"]
+    }
+  ]
+}

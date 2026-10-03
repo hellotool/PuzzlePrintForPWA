@@ -14,3 +14,6 @@ dist/
 .idea
 
 *.gen.ts
+
+# Lint caches
+.rumdl_cache/

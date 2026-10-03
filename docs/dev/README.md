@@ -11,11 +11,21 @@
 
 ### 环境配置
 
-TODO
+- Node.js 26 及以上
+- pnpm 12.6.0（由 `packageManager` 字段声明，Corepack 会自动使用）
 
 ## 📦 构建应用
 
-| 类型         | 命令                   |
-| ------------ | ---------------------- |
-| Web (PWA) 版 | `pnpm run build:web`   |
-| Tauri 版     | `pnpm run build:tauri` |
+| 类型         | 命令                       |
+| ------------ | -------------------------- |
+| Web (PWA) 版 | `pnpm run build:browser`   |
+| Tauri 版     | `pnpm run build:tauri`     |
+
+## ✅ 代码与文档质量
+
+- 检查：`pnpm check`（代码用 Biome，文档用 rumdl）
+- 格式化：`pnpm format`
+
+## 📄 文档生成
+
+- 第三方声明：`pnpm docs:generateNotices`，模板在 `templates/NOTICES.md.ts` 与 `templates/NOTICES.zh-CN.md.ts`，补充条目在 `scripts/notices/notices.json`。请勿直接编辑生成的 `NOTICES.md` 与 `NOTICES.zh-CN.md`。
