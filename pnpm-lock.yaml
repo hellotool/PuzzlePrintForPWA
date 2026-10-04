@@ -202,9 +202,6 @@ importers:
       '@tauri-apps/api':
         specifier: ^2.12.1
         version: 2.12.1
-      i18next:
-        specifier: ^26.4.2
-        version: 26.4.2(typescript@7.0.2)
       nanoid:
         specifier: ^6.0.1
         version: 6.0.1
@@ -2513,14 +2510,6 @@ packages:
 
   html-entities@2.3.3:
     resolution: {integrity: sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA==}
-
-  i18next@26.4.2:
-    resolution: {integrity: sha512-RX+R0VLg13IbvRuJSxnqykUFS9vQZTl8wYpWPCIUDWVrSGjsQywB5Y+pjzrkboxGAuYfJZVH1InFTdgBdxq6ug==}
-    peerDependencies:
-      typescript: ^5 || ^6 || ^7
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   idb@7.1.1:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
@@ -5743,10 +5732,6 @@ snapshots:
   hosted-git-info@2.8.9: {}
 
   html-entities@2.3.3: {}
-
-  i18next@26.4.2(typescript@7.0.2):
-    optionalDependencies:
-      typescript: 7.0.2
 
   idb@7.1.1: {}
 
