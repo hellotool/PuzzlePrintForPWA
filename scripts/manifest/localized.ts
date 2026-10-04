@@ -1,9 +1,9 @@
 import { glob } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import zhCNManifest from './src/locales/zh-CN/manifest.ts';
+import zhCNManifest from '../../src/locales/zh-CN/manifest.ts';
 
-const manifestsGlob = glob(path.join(import.meta.dirname, './src/locales/*/manifest.*'), {});
+const manifestsGlob = glob(path.join(import.meta.dirname, '../../src/locales/*/manifest.*'), {});
 const excludedManifest = zhCNManifest;
 
 const manifests: Record<string, unknown>[] = [];

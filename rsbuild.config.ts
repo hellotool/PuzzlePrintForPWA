@@ -94,12 +94,12 @@ export default defineConfig({
           name: 'web-manifest-plugin',
           setup(api) {
             api.processAssets({ stage: 'additional' }, async ({ sources, compilation }) => {
-              const { default: rawManifest } = await import('./manifest.json', {
+              const { default: rawManifest } = await import('./src/app/manifest/manifest.json', {
                 with: { type: 'json' },
               });
               const manifest: Record<string, unknown> = { ...rawManifest };
               delete manifest.$schema;
-              const localeManifest = (await import('./localizedManifest.ts')).default;
+              const localeManifest = (await import('./scripts/manifest/localized.ts')).default;
               const mergedManifest = Object.assign(manifest, localeManifest);
               const source = new sources.RawSource(
                 JSON.stringify(mergedManifest).replaceAll(
