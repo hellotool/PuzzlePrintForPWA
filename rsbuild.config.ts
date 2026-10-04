@@ -31,7 +31,7 @@ export default defineConfig({
     pluginSass(),
   ],
   html: {
-    template: './src/index.html',
+    template: './src/app/index.html',
     title: '',
   },
   output: {
@@ -53,6 +53,9 @@ export default defineConfig({
   },
 
   source: {
+    entry: {
+      index: './src/app/index.tsx',
+    },
     define: {
       IS_TAURI: false,
       CONFIG_ENABLE_PWA: true,
@@ -79,7 +82,7 @@ export default defineConfig({
               ? []
               : [
                   new GenerateSW({
-                    cacheId: 'snap-proof-print-helper',
+                    cacheId: 'puzzle-print',
                     cleanupOutdatedCaches: true,
                   }),
                 ]),
@@ -91,9 +94,12 @@ export default defineConfig({
           name: 'web-manifest-plugin',
           setup(api) {
             api.processAssets({ stage: 'additional' }, async ({ sources, compilation }) => {
-              const manifest = await import('./manifest.json');
+              const { default: rawManifest } = await import('./manifest.json', {
+                with: { type: 'json' },
+              });
+              const manifest: Record<string, unknown> = { ...rawManifest };
               delete manifest.$schema;
-              const localeManifest = (await import('./localizedManifest')).default;
+              const localeManifest = (await import('./localizedManifest.ts')).default;
               const mergedManifest = Object.assign(manifest, localeManifest);
               const source = new sources.RawSource(
                 JSON.stringify(mergedManifest).replaceAll(

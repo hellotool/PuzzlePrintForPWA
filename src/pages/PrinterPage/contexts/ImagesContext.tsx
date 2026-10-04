@@ -1,7 +1,7 @@
 import { createContext, type JSX, onCleanup, useContext } from 'solid-js';
-import { createImagesActions, type ImagesActions } from '../actions/images';
-import { createImagesStore, type ImagesStore } from '../stores/images';
-import { useConfig } from './ConfigContext';
+import { createImagesActions, type ImagesActions } from '@/pages/PrinterPage/actions/images';
+import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
+import { createImagesStore, type ImagesStore } from '@/pages/PrinterPage/stores/images';
 
 const ImagesContext = createContext<{ state: ImagesStore; actions: ImagesActions }>();
 

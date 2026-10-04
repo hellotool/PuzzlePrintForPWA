@@ -1,7 +1,7 @@
 import { InputAdornment, ListItem, TextField } from '@suid/material';
 import type { Accessor } from 'solid-js';
-import { type SyncStateOptions, syncState } from '@/hooks/syncState';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
+import { type SyncStateOptions, syncState } from '@/shared/hooks/syncState';
 
 function createMarginInputLinter(value: Accessor<string>) {
   return () => {

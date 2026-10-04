@@ -5,11 +5,11 @@ import PrintPreview from '@/features/print/components/PrintPreview';
 import PrintPreviewPaper from '@/features/print/components/PrintPreviewPaper';
 import { pageSizeNameToCm } from '@/features/print/utils/paperSize';
 import { getOrientationBasedSize } from '@/features/print/utils/print';
-import { usePreferredDarkMode } from '@/hooks/usePreferredDarkMode';
-import { createAppTheme } from '@/themes/appTheme';
-import { useConfig } from '../contexts/ConfigContext';
-import useImages from '../contexts/ImagesContext';
-import SPPrintPageContent from './SPPrintPageContent';
+import SPPrintPageContent from '@/pages/PrinterPage/components/SPPrintPageContent';
+import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
+import useImages from '@/pages/PrinterPage/contexts/ImagesContext';
+import { usePreferredDarkMode } from '@/shared/hooks/usePreferredDarkMode';
+import { createAppTheme } from '@/shared/themes/appTheme';
 
 export default function MainArea() {
   const insets = useInsets();

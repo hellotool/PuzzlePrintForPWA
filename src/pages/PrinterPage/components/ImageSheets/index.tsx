@@ -4,13 +4,13 @@ import CloseIcon from '@suid/icons-material/Close';
 import { alpha, Box, Drawer, Fade, Toolbar, Typography, useTheme } from '@suid/material';
 import type { DrawerProps } from '@suid/material/Drawer';
 import { createSignal, For, Show } from 'solid-js';
-import { ToolbarIconButton } from '@/components/toolbar/ToolbarIconButton';
-import ToolbarTitle from '@/components/toolbar/ToolbarTitle';
 import { useInsets } from '@/features/insets/contexts/InsetsContext';
-import { pickFiles } from '@/utils/file';
-import { mergeMultiSxProps } from '@/utils/suid';
-import useImages from '../../contexts/ImagesContext';
-import ImageItem from './ImageItem';
+import ImageItem from '@/pages/PrinterPage/components/ImageSheets/ImageItem';
+import useImages from '@/pages/PrinterPage/contexts/ImagesContext';
+import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
+import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
+import { pickFiles } from '@/shared/utils/file';
+import { mergeMultiSxProps } from '@/shared/utils/suid';
 
 interface ImageSheetsProps extends DrawerProps {
   // biome-ignore lint/suspicious/noExplicitAny: false

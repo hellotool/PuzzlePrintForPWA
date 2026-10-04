@@ -4,14 +4,14 @@ import { createDeferred, createMemo, createSignal, Show } from 'solid-js';
 import AboutDialog from '@/dialogs/AboutDialog';
 import { InsetsProvider } from '@/features/insets/contexts/InsetsContext';
 import usePrint from '@/features/print/hooks/createPrinting';
-import { createSheetOpenState } from '@/hooks/createSheetOpenedState';
-import AdjustSheets from './components/AdjustSheets';
-import AppBarArea from './components/AppBarArea';
-import ImageSheets from './components/ImageSheets';
-import MainArea from './components/MainArea';
-import SPPrint from './components/SPPrint';
-import { ConfigProvider } from './contexts/ConfigContext';
-import useImages, { ImagesProvider } from './contexts/ImagesContext';
+import AdjustSheets from '@/pages/PrinterPage/components/AdjustSheets';
+import AppBarArea from '@/pages/PrinterPage/components/AppBarArea';
+import ImageSheets from '@/pages/PrinterPage/components/ImageSheets';
+import MainArea from '@/pages/PrinterPage/components/MainArea';
+import SPPrint from '@/pages/PrinterPage/components/SPPrint';
+import { ConfigProvider } from '@/pages/PrinterPage/contexts/ConfigContext';
+import useImages, { ImagesProvider } from '@/pages/PrinterPage/contexts/ImagesContext';
+import { createSheetOpenState } from '@/shared/hooks/createSheetOpenedState';
 
 function PrinterPageContent() {
   const theme = useTheme();

@@ -1,6 +1,6 @@
 import { createStore } from 'solid-js/store';
 
-import type { PaperLayout, PreviewConfig, PrintConfig } from '../types/config';
+import type { PaperLayout, PreviewConfig, PrintConfig } from '@/pages/PrinterPage/types/config';
 
 export interface ConfigStore {
   layout: PaperLayout;

@@ -2,6 +2,7 @@ import { createSignal } from 'solid-js';
 import type { Workbox } from 'workbox-window';
 
 const [isServiceWorkerWaiting, setIsServiceWorkerWaiting] = createSignal(false);
+
 export { isServiceWorkerWaiting };
 
 let workbox: Workbox | undefined;

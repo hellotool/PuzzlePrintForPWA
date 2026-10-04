@@ -28,17 +28,17 @@ import type { SelectChangeEvent } from '@suid/material/Select';
 import type { ChangeEvent } from '@suid/types';
 import type { DataType } from 'csstype';
 import { type Accessor, createMemo, For, type JSX, Show } from 'solid-js';
-import ListSwitchItem from '@/components/list/ListSwitchItem';
-import ToolbarTitle from '@/components/toolbar/ToolbarTitle';
 import { useInsets } from '@/features/insets/contexts/InsetsContext';
 import { getAvailablePageSizes, pageSizeNameToCm } from '@/features/print/utils/paperSize';
-import { type SyncStateOptions, syncState } from '@/hooks/syncState';
-import { usePreferredDarkMode } from '@/hooks/usePreferredDarkMode';
-import { maybeAndroid } from '@/utils/platform';
-import { mergeMultiSxProps } from '@/utils/suid';
-import { useConfig } from '../../contexts/ConfigContext';
-import type { PrintConfig } from '../../types/config';
-import CustomMarginItems from './CustomMarginItems';
+import CustomMarginItems from '@/pages/PrinterPage/components/AdjustSheets/CustomMarginItems';
+import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
+import type { PrintConfig } from '@/pages/PrinterPage/types/config';
+import ListSwitchItem from '@/shared/components/list/ListSwitchItem';
+import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
+import { type SyncStateOptions, syncState } from '@/shared/hooks/syncState';
+import { usePreferredDarkMode } from '@/shared/hooks/usePreferredDarkMode';
+import { maybeAndroid } from '@/shared/utils/platform';
+import { mergeMultiSxProps } from '@/shared/utils/suid';
 
 function createPositiveIntegerInputLinter(value: Accessor<string>) {
   return createMemo(() => {

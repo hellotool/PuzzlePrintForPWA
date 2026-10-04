@@ -1,4 +1,4 @@
-import { MDCTooltip } from '@material/tooltip';
+import type { MDCTooltip } from '@material/tooltip';
 import { IconButton } from '@suid/material';
 import type { IconButtonProps } from '@suid/material/IconButton';
 import type { Theme } from '@suid/material/styles';

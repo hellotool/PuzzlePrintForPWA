@@ -1,7 +1,7 @@
 import { Box, Paper, Typography } from '@suid/material';
 import type { BoxProps } from '@suid/system/Box';
 import { splitProps } from 'solid-js';
-import type { SnapImage } from '../../types/image';
+import type { SnapImage } from '@/pages/PrinterPage/types/image';
 
 interface ImageItemProps extends BoxProps {
   image: SnapImage;

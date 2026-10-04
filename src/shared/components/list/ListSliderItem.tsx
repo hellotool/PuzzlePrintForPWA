@@ -1,7 +1,7 @@
 import { Box, ListItem, type Theme } from '@suid/material';
 import type { SxProps } from '@suid/system';
 import { useEffect, useState } from 'react';
-import ListItemTitledComponent from './ListItemTitledComponent';
+import ListItemTitledComponent from '@/shared/components/list/ListItemTitledComponent';
 
 interface ListSliderItemProps<Value extends number | number[]> {
   title?: string;

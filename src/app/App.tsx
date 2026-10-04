@@ -1,16 +1,16 @@
 import { Meta, MetaProvider, Title } from '@solidjs/meta';
 import { alpha, GlobalStyles, ThemeProvider } from '@suid/material';
 import { createEffect } from 'solid-js';
-import { GlobalLocaleConfigProvider } from './contexts/GlobalLocaleConfigContext';
-import { createCurrentLocale } from './hooks/createCurrentLocale';
-import createGlobalTranslator from './hooks/createGlobalTranslator';
-import { makeDisableDefaultContextMenuListener } from './hooks/makeDisableDefaultContextMenuListener';
-import { makeDisableDefaultDropListener } from './hooks/makeDisableDefaultDropListener';
-import { makeDisableDefaultF5Listener } from './hooks/makeDisableDefaultF5Listener';
-import { makeMeta } from './hooks/makeMeta';
-import { useDisplayStandaloneMode } from './hooks/useDisplayStandaloneMode';
-import PrinterPage from './pages/PrinterPage';
-import { createAppTheme } from './themes/appTheme';
+import {
+  makeDisableDefaultContextMenuListener,
+  makeDisableDefaultDropListener,
+  makeDisableDefaultF5Listener,
+  makeMeta,
+} from '@/app/global-effects';
+import PrinterPage from '@/pages/PrinterPage';
+import { useDisplayStandaloneMode } from '@/shared/hooks/useDisplayStandaloneMode';
+import { createCurrentLocale, createGlobalTranslator, GlobalLocaleConfigProvider } from '@/shared/i18n';
+import { createAppTheme } from '@/shared/themes/appTheme';
 
 export function App() {
   const theme = createAppTheme();

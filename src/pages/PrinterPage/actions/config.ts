@@ -1,5 +1,5 @@
 import type { SetStoreFunction } from 'solid-js/store';
-import type { ConfigStore } from '../stores/config';
+import type { ConfigStore } from '@/pages/PrinterPage/stores/config';
 
 export interface ConfigActions {
   layout: {

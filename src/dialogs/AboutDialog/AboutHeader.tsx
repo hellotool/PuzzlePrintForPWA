@@ -8,7 +8,7 @@ interface AboutHeaderProps {
   sx?: SxProps<Theme>;
 }
 export default function AboutHeader(props: AboutHeaderProps) {
-  const theme= useTheme();
+  const theme = useTheme();
   return (
     <Box
       sx={{

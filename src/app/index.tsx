@@ -1,8 +1,8 @@
-import './styles/index.scss';
+import '@/shared/styles/index.scss';
 import { render } from 'solid-js/web';
-import { App } from './App';
-import { registerServiceWorker } from './features/workbox';
-import { isServiceWorkerSupported } from './utils/platform';
+import { App } from '@/app/App';
+import { registerServiceWorker } from '@/features/workbox';
+import { isServiceWorkerSupported } from '@/shared/utils/platform';
 
 document.documentElement.lang = 'zh-CN';
 

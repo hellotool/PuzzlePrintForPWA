@@ -5,9 +5,9 @@ import ViewSidebarIcon from '@suid/icons-material/ViewSidebar';
 import ViewSidebarOutlinedIcon from '@suid/icons-material/ViewSidebarOutlined';
 import { AppBar, Badge, Menu, MenuItem, Toolbar, useTheme } from '@suid/material';
 import { createSignal, Show } from 'solid-js';
-import { ToolbarIconButton } from '@/components/toolbar/ToolbarIconButton';
-import ToolbarTitle from '@/components/toolbar/ToolbarTitle';
 import { getWorkBox, isServiceWorkerWaiting } from '@/features/workbox';
+import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
+import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
 
 interface AppBarAreaProps {
   onToggleAdjustSheets?: () => void;
@@ -34,7 +34,7 @@ export default function AppBarArea(props: AppBarAreaProps) {
   return (
     <AppBar>
       <Toolbar sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <ToolbarTitle>快照凭证打印助手</ToolbarTitle>
+        <ToolbarTitle>哈兔拼图打印</ToolbarTitle>
         <ToolbarIconButton
           icon={props.imageSheetsButtonActive ? <PhotoLibraryIcon /> : <PhotoLibraryOutlinedIcon />}
           label={!props.imageSheetsButtonActive ? '打开图片面板' : '关闭图片面板'}

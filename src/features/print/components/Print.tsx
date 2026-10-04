@@ -2,9 +2,9 @@ import { GlobalStyles } from '@suid/material';
 import type { DataType } from 'csstype';
 import { createMemo, type JSX, onMount } from 'solid-js';
 import { mergeProps, Portal } from 'solid-js/web';
-import { PrintPaperConfigProvider } from '../contexts/PrintPaperConfigContext';
-import { pageSizeNameToCm } from '../utils/paperSize';
-import { getOrientationBasedSize } from '../utils/print';
+import { PrintPaperConfigProvider } from '@/features/print/contexts/PrintPaperConfigContext';
+import { pageSizeNameToCm } from '@/features/print/utils/paperSize';
+import { getOrientationBasedSize } from '@/features/print/utils/print';
 
 export interface PrintProps {
   children: JSX.Element;

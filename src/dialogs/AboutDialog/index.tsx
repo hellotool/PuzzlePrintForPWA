@@ -1,9 +1,9 @@
 import type { ModalUnstyledOnClose } from '@suid/base/ModalUnstyled';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Link } from '@suid/material';
 import { For, type JSX } from 'solid-js';
+import { APP_EMAIL, APP_VERSION, URL_APP_LICENSE, URL_REPOSITORY } from '@/app/meta';
 import APP_ICON from '@/assets/images/icon.svg';
-import { APP_EMAIL, APP_VERSION, URL_APP_LICENSE, URL_REPOSITORY } from '@/constants';
-import AboutHeader from './AboutHeader';
+import AboutHeader from '@/dialogs/AboutDialog/AboutHeader';
 
 interface AboutInformation {
   label: string;
@@ -49,7 +49,7 @@ export default function AboutDialog(props: AboutDialogProps) {
           overflowWrap: 'break-word',
         }}
       >
-        <AboutHeader icon={APP_ICON} name="快照凭证打印助手" version={APP_VERSION} />
+        <AboutHeader icon={APP_ICON} name="拼图打印" version={APP_VERSION} />
         <DialogContentText
           component="div"
           sx={{
