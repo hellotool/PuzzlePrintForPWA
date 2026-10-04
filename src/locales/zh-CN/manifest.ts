@@ -1,4 +1,4 @@
-import application from './application';
+import application from './application.ts';
 
 export default {
   lang: 'zh-CN',

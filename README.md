@@ -1,3 +1,3 @@
-# Hello Puzzle Print
+# Puzzle Print
 
 Please view [README.zh.md](README.zh.md)

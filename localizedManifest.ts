@@ -1,15 +1,16 @@
 import { glob } from 'node:fs/promises';
 import path from 'node:path';
-import zhCNManifest from './src/locales/zh-CN/manifest';
+import { pathToFileURL } from 'node:url';
+import zhCNManifest from './src/locales/zh-CN/manifest.ts';
 
 const manifestsGlob = glob(path.join(import.meta.dirname, './src/locales/*/manifest.*'), {});
 const excludedManifest = zhCNManifest;
 
-const manifests = [];
+const manifests: Record<string, unknown>[] = [];
 for await (const manifestPath of manifestsGlob) {
-  const manifest = (await import(manifestPath)).default;
+  const manifest = (await import(pathToFileURL(manifestPath).href)).default;
   if (manifest !== excludedManifest) {
-    manifests.push((await import(manifestPath)).default);
+    manifests.push(manifest);
   }
 }
 

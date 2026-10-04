@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    snap_proof_print_helper_lib::run()
+    puzzle_print_lib::run()
 }

@@ -19,7 +19,7 @@
 1. 确保 [Gitee][RepositoryOnGitee] 或 [GitHub][RepositoryOnGithub] 中没有相关的 PR；
 2. Fork 本仓库；
 3. 使用 [Git](https://git-scm.com/) 克隆仓库到本地；
-4. 阅读[开发指南](./dev/README.md)，熟悉项目开发方法；
+4. 阅读[开发指南](./docs/dev/README.md)，熟悉项目开发方法；
 5. 创建分支，如 `feature/xxx` 或 `bugfix/xxx`；
 6. 编写并提交代码；
 7. 向本仓库提交 Pull Request。
@@ -31,8 +31,8 @@
 **Markdown（`.md`）：**
 
 - 不限制最大行数；
-- 详情请参考 `.markdownlint.json`；
-- 其他情况以 [Markdownlint](https://github.com/DavidAnson/markdownlint) 为准。
+- 详情请参考 `rumdl.toml`；
+- 其他情况以 [rumdl](https://rumdl.dev/) 为准。
 
 详情请参考 `biome.json`。
 
@@ -50,7 +50,7 @@
 
 颜色使用 Google 色板，该色板来自 Chromium 的 [`cr_shared_vars.css`](https://github.com/chromium/chromium/blob/d536e1807c5aeffae2d28e1efa75e46d4fef7e70/ui/webui/resources/cr_elements/cr_shared_vars.css)。
 
-[RepositoryOnGitee]: https://gitee.com/HelloTool/SnapProofPrintHelperForPWA
-[RepositoryOnGithub]: https://github.com/HelloTool/SnapProofPrintHelperForPWA
-[IssuesOnGitee]: https://gitee.com/HelloTool/SnapProofPrintHelperForPWA/issues
-[IssuesOnGithub]: https://github.com/HelloTool/SnapProofPrintHelperForPWA/issues
+[RepositoryOnGitee]: https://gitee.com/hellotool/PuzzlePrintForPWA
+[RepositoryOnGithub]: https://github.com/hellotool/PuzzlePrintForPWA
+[IssuesOnGitee]: https://gitee.com/hellotool/PuzzlePrintForPWA/issues
+[IssuesOnGithub]: https://github.com/hellotool/PuzzlePrintForPWA/issues

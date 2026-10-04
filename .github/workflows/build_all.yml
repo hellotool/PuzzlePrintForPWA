@@ -1,0 +1,55 @@
+name: Build Project
+
+on:
+  workflow_call:
+    inputs:
+      build_windows:
+        description: "构建 Windows 版本"
+        required: false
+        type: boolean
+        default: false
+      build_web:
+        description: "构建 Web 版本"
+        required: false
+        type: boolean
+        default: true
+      base:
+        description: "Web 版基础路径 (e.g. /repo/)"
+        required: false
+        type: string
+        default: "/"
+  workflow_dispatch:
+    inputs:
+      build_windows:
+        description: "构建 Windows 版本"
+        required: false
+        type: boolean
+        default: false
+      build_web:
+        description: "构建 Web 版本"
+        required: false
+        type: boolean
+        default: true
+      base:
+        description: "Web 版基础路径 (e.g. /repo/)"
+        required: false
+        type: string
+        default: "/"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install

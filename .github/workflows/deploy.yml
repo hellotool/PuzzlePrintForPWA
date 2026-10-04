@@ -1,0 +1,33 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Build web version
+        uses: ./.github/workflows/build_web.yml
+        with:
+          base: >
+            ${{ 
+              github.repository == format('{0}/{0}.github.io', github.repository_owner) 
+              && '/' 
+              || format('/{0}/', github.event.repository.name) 
+            }}
+          artifact-name: web-deploy
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-deploy
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

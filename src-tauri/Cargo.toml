@@ -1,11 +1,11 @@
 [package]
-name = "SnapProofPrintHelper"
+name = "PuzzlePrint"
 version = "0.1.0"
 description = "Print multiple transfer record graphs, e-commerce order graphs, etc. on paper in a voucher style."
 authors = ["Jesse205"]
 edition = "2021"
 license = "Apache-2.0"
-homepage = "https://gitee.com/HelloTool/SnapProofPrintHelperForPWA"
+homepage = "https://gitee.com/hellotool/PuzzlePrintForPWA"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,7 +13,7 @@ homepage = "https://gitee.com/HelloTool/SnapProofPrintHelperForPWA"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "snap_proof_print_helper_lib"
+name = "puzzle_print_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

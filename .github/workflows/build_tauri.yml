@@ -1,0 +1,43 @@
+name: Build Tauri Version
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: Operating System
+        required: true
+        type: string
+      artifact-name:
+        description: Artifact Name
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    name: Build ${{ inputs.artifact-name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build tauri
+        run: pnpm build:tauri
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: src-tauri/target/release/bundle/**/*
+          if-no-files-found: error
