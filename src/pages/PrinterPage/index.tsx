@@ -1,9 +1,9 @@
 import PrintIcon from '@suid/icons-material/Print';
 import { Box, Fab, useMediaQuery, useTheme } from '@suid/material';
 import { createDeferred, createMemo, createSignal, Show } from 'solid-js';
-import AboutDialog from '@/dialogs/AboutDialog';
-import { InsetsProvider } from '@/features/insets/contexts/InsetsContext';
-import usePrint from '@/features/print/hooks/createPrinting';
+import AboutDialog from '@/features/about';
+import { InsetsProvider } from '@/features/insets';
+import { createPrinting as usePrint } from '@/features/print';
 import AdjustSheets from '@/pages/PrinterPage/components/AdjustSheets';
 import AppBarArea from '@/pages/PrinterPage/components/AppBarArea';
 import ImageSheets from '@/pages/PrinterPage/components/ImageSheets';

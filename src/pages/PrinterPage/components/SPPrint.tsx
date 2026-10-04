@@ -1,6 +1,5 @@
 import { Index } from 'solid-js';
-import Print from '@/features/print/components/Print';
-import PrintPaper from '@/features/print/components/PrintPaper';
+import { Print, PrintPaper } from '@/features/print';
 import SnapProofPageContent from '@/pages/PrinterPage/components/SPPrintPageContent';
 import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
 import useImages from '@/pages/PrinterPage/contexts/ImagesContext';

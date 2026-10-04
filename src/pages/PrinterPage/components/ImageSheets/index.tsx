@@ -4,7 +4,7 @@ import CloseIcon from '@suid/icons-material/Close';
 import { alpha, Box, Drawer, Fade, Toolbar, Typography, useTheme } from '@suid/material';
 import type { DrawerProps } from '@suid/material/Drawer';
 import { createSignal, For, Show } from 'solid-js';
-import { useInsets } from '@/features/insets/contexts/InsetsContext';
+import { useInsets } from '@/features/insets';
 import ImageItem from '@/pages/PrinterPage/components/ImageSheets/ImageItem';
 import useImages from '@/pages/PrinterPage/contexts/ImagesContext';
 import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';

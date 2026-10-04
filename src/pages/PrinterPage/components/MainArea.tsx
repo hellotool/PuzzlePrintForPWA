@@ -1,10 +1,7 @@
 import { Box, ThemeProvider, Toolbar, Typography, useTheme } from '@suid/material';
 import { createMemo, Index, Show } from 'solid-js';
-import { useInsets } from '@/features/insets/contexts/InsetsContext';
-import PrintPreview from '@/features/print/components/PrintPreview';
-import PrintPreviewPaper from '@/features/print/components/PrintPreviewPaper';
-import { pageSizeNameToCm } from '@/features/print/utils/paperSize';
-import { getOrientationBasedSize } from '@/features/print/utils/print';
+import { useInsets } from '@/features/insets';
+import { getOrientationBasedSize, PrintPreview, PrintPreviewPaper, pageSizeNameToCm } from '@/features/print';
 import SPPrintPageContent from '@/pages/PrinterPage/components/SPPrintPageContent';
 import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
 import useImages from '@/pages/PrinterPage/contexts/ImagesContext';

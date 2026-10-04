@@ -5,7 +5,7 @@ import ViewSidebarIcon from '@suid/icons-material/ViewSidebar';
 import ViewSidebarOutlinedIcon from '@suid/icons-material/ViewSidebarOutlined';
 import { AppBar, Badge, Menu, MenuItem, Toolbar, useTheme } from '@suid/material';
 import { createSignal, Show } from 'solid-js';
-import { getWorkBox, isServiceWorkerWaiting } from '@/features/workbox';
+import { getWorkBox, isServiceWorkerWaiting } from '@/features/pwa';
 import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
 import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
 
