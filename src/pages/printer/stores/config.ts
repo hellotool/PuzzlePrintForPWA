@@ -1,5 +1,32 @@
-import type { SetStoreFunction } from 'solid-js/store';
-import type { ConfigStore } from '@/pages/PrinterPage/stores/config';
+import { createStore, type SetStoreFunction } from 'solid-js/store';
+import type { PaperLayout, PreviewConfig, PrintConfig } from '@/pages/printer/types/config';
+
+export interface ConfigStore {
+  layout: PaperLayout;
+  print: PrintConfig;
+  preview: PreviewConfig;
+}
+export function createConfigStore() {
+  return createStore<ConfigStore>({
+    layout: {
+      columns: 3,
+      rows: 1,
+    },
+    print: {
+      contentMarginPreset: 'default',
+      contentMarginLeft: 0.5,
+      contentMarginTop: 1,
+      contentMarginRight: 0.5,
+      contentMarginBottom: 1,
+      orientation: 'landscape',
+      size: 'A4',
+    },
+    preview: {
+      colorMode: 'gray',
+      lightMode: false,
+    },
+  });
+}
 
 export interface ConfigActions {
   layout: {

@@ -7,7 +7,7 @@ import {
   makeDisableDefaultF5Listener,
   makeMeta,
 } from '@/app/global-effects';
-import PrinterPage from '@/pages/PrinterPage';
+import PrinterPage from '@/pages/printer';
 import { useDisplayStandaloneMode } from '@/shared/hooks/useDisplayStandaloneMode';
 import { createCurrentLocale, createGlobalTranslator, GlobalLocaleConfigProvider } from '@/shared/i18n';
 import { createAppTheme } from '@/shared/themes/appTheme';

@@ -1,6 +1,11 @@
 import { createContext, createEffect, type JSX, useContext } from 'solid-js';
-import { type ConfigActions, createConfigActions } from '@/pages/PrinterPage/actions/config';
-import { type ConfigStore, createConfigStore } from '@/pages/PrinterPage/stores/config';
+
+import {
+  type ConfigActions,
+  type ConfigStore,
+  createConfigActions,
+  createConfigStore,
+} from '@/pages/printer/stores/config';
 
 const ConfigContext = createContext<{ state: ConfigStore; actions: ConfigActions }>();
 

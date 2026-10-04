@@ -5,8 +5,8 @@ import { alpha, Box, Drawer, Fade, Toolbar, Typography, useTheme } from '@suid/m
 import type { DrawerProps } from '@suid/material/Drawer';
 import { createSignal, For, Show } from 'solid-js';
 import { useInsets } from '@/features/insets';
-import ImageItem from '@/pages/PrinterPage/components/ImageSheets/ImageItem';
-import useImages from '@/pages/PrinterPage/contexts/ImagesContext';
+import ImageItem from '@/pages/printer/components/ImageSheets/ImageItem';
+import useImages from '@/pages/printer/contexts/ImagesContext';
 import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
 import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
 import { pickFiles } from '@/shared/utils/file';

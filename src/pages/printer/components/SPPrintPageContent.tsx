@@ -1,6 +1,6 @@
 import { Box } from '@suid/material';
 import { Index } from 'solid-js';
-import type { SnapImage } from '@/pages/PrinterPage/types/image';
+import type { SnapImage } from '@/pages/printer/types/image';
 import { isItemColumnStart, isItemRowStart } from '@/shared/utils/grid';
 
 interface SPPrintPageContentProps {

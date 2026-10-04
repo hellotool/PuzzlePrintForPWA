@@ -2,9 +2,9 @@ import { Box, ThemeProvider, Toolbar, Typography, useTheme } from '@suid/materia
 import { createMemo, Index, Show } from 'solid-js';
 import { useInsets } from '@/features/insets';
 import { getOrientationBasedSize, PrintPreview, PrintPreviewPaper, pageSizeNameToCm } from '@/features/print';
-import SPPrintPageContent from '@/pages/PrinterPage/components/SPPrintPageContent';
-import { useConfig } from '@/pages/PrinterPage/contexts/ConfigContext';
-import useImages from '@/pages/PrinterPage/contexts/ImagesContext';
+import SPPrintPageContent from '@/pages/printer/components/SPPrintPageContent';
+import { useConfig } from '@/pages/printer/contexts/ConfigContext';
+import useImages from '@/pages/printer/contexts/ImagesContext';
 import { usePreferredDarkMode } from '@/shared/hooks/usePreferredDarkMode';
 import { createAppTheme } from '@/shared/themes/appTheme';
 
