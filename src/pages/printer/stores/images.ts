@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid';
 import { createStore, produce, type SetStoreFunction, unwrap } from 'solid-js/store';
-import type { ConfigStore } from '@/pages/printer/stores/config';
-import type { SnapImage } from '@/pages/printer/types/image';
 import { chunkArray } from '@/shared/utils/list';
+import type { SnapImage } from '../types/image';
+import type { ConfigStore } from './config';
 
 export interface ImagesStore {
   images: SnapImage[];

@@ -3,9 +3,9 @@ import type BoxProps from '@suid/material/Box/BoxProps';
 import type { DataType } from 'csstype';
 import type { JSX } from 'solid-js';
 import { createMemo, mergeProps, splitProps } from 'solid-js';
-import { PrintPreviewPaperConfigProvider } from '@/features/print/contexts/PrintPreviewPaperConfigContext';
-import { pageSizeNameToCm } from '@/features/print/utils/paperSize';
-import { getOrientationBasedSize } from '@/features/print/utils/print';
+import { PrintPreviewPaperConfigProvider } from '../contexts/PrintPreviewPaperConfigContext';
+import { pageSizeNameToCm } from '../utils/paperSize';
+import { getOrientationBasedSize } from '../utils/print';
 
 interface PrintPreviewProps extends BoxProps {
   children: JSX.Element;

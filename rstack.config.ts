@@ -1,28 +1,32 @@
 import { execSync } from 'node:child_process';
 import { GenerateSW } from '@aaroon/workbox-rspack-plugin';
-import { defineConfig, type RsbuildPlugin } from '@rsbuild/core';
+import { type RsbuildPlugin } from '@rsbuild/core';
 import { pluginBabel } from '@rsbuild/plugin-babel';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSolid } from '@rsbuild/plugin-solid';
+import solid from 'eslint-plugin-solid';
+import { define } from 'rstack';
 
-const GIT_REFERENCE =
-  process.env.NODE_ENV === 'development'
-    ? 'main'
-    : (() => {
-        try {
-          return execSync('git describe --tags --exact-match HEAD').toString().trim();
-        } catch (_e) {
-          console.warn('Failed to get git tags, using commit hash instead');
-          try {
-            return execSync('git rev-parse HEAD').toString().trim();
-          } catch (_e) {
-            console.warn('Failed to get git commit hash');
-            return 'main';
-          }
-        }
-      })();
+function getGitReference() {
+  if (process.env.NODE_ENV === 'development') {
+    return 'main';
+  }
+  try {
+    return execSync('git describe --tags --exact-match HEAD').toString().trim();
+  } catch (_e) {
+    console.warn('Failed to get git tags, using commit hash instead');
+  }
+  try {
+    return execSync('git rev-parse HEAD').toString().trim();
+  } catch (_e) {
+    console.warn('Failed to get git commit hash');
+  }
+  return 'main';
+}
 
-export default defineConfig({
+const GIT_REFERENCE = getGitReference();
+
+define.app({
   plugins: [
     pluginBabel({
       include: /\.(?:jsx|tsx)$/,
@@ -94,7 +98,7 @@ export default defineConfig({
           name: 'web-manifest-plugin',
           setup(api) {
             api.processAssets({ stage: 'additional' }, async ({ sources, compilation }) => {
-              const { default: rawManifest } = await import('./src/app/manifest/manifest.json', {
+              const { default: rawManifest } = await import('./src/app/manifest.json', {
                 with: { type: 'json' },
               });
               const manifest: Record<string, unknown> = { ...rawManifest };
@@ -104,7 +108,7 @@ export default defineConfig({
               const source = new sources.RawSource(
                 JSON.stringify(mergedManifest).replaceAll(
                   '<%= process.env.BASE_URL %>',
-                  api.getRsbuildConfig('current').output.assetPrefix,
+                  api.getRsbuildConfig('current').output?.assetPrefix ?? '/',
                 ),
               );
               compilation.emitAsset('manifest.json', source);
@@ -129,3 +133,41 @@ export default defineConfig({
     },
   },
 });
+
+define.fmt({
+  printWidth: 120,
+  singleQuote: true,
+  // markdown 由 rumdl 负责，YAML/TOML 保持现状，不让 Prettier 接管
+  ignorePatterns: ['**/*.md', '**/*.yml', '**/*.yaml', '**/*.toml'],
+});
+
+define.lint((lint) => [
+  lint.globalIgnores(['dist/**', 'src-tauri/gen/**', 'src-tauri/target/**']),
+  lint.js.configs.recommended,
+  lint.ts.configs.recommended,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { solid },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+      // Solid 把 <div ref={localVar}> 编译成对 localVar 的赋值，此规则看不到这层赋值
+      'no-unassigned-vars': 'off',
+      // Solid 惯用 `this.dep.length;` 在 getter 里显式建立依赖，不是无用表达式
+      '@typescript-eslint/no-unused-expressions': 'off',
+      'solid/no-destructure': 'error',
+      'solid/no-react-specific-props': 'error',
+      'solid/no-innerhtml': 'error',
+      'solid/jsx-no-undef': 'error',
+      'solid/prefer-for': 'error',
+    },
+  },
+]);

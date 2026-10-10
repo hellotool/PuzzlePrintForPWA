@@ -1,8 +1,8 @@
 import { Index } from 'solid-js';
 import { Print, PrintPaper } from '@/features/print';
-import SnapProofPageContent from '@/pages/printer/components/SPPrintPageContent';
-import { useConfig } from '@/pages/printer/contexts/ConfigContext';
-import useImages from '@/pages/printer/contexts/ImagesContext';
+import { useConfig } from '../contexts/ConfigContext';
+import { useImages } from '../contexts/ImagesContext';
+import SnapProofPageContent from './SPPrintPageContent';
 
 export default function SPPrint() {
   const { state: config } = useConfig();

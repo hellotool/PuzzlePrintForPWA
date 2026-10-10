@@ -1,7 +1,7 @@
 import { InputAdornment, ListItem, TextField } from '@suid/material';
 import type { Accessor } from 'solid-js';
-import { useConfig } from '@/pages/printer/contexts/ConfigContext';
-import { type SyncStateOptions, syncState } from '@/shared/hooks/syncState';
+import { createSyncedState, type SyncedStateOptions } from '@/shared/hooks/createSyncedState';
+import { useConfig } from '../../contexts/ConfigContext';
 
 function createMarginInputLinter(value: Accessor<string>) {
   return () => {
@@ -13,29 +13,29 @@ function createMarginInputLinter(value: Accessor<string>) {
   };
 }
 
-const MARGIN_INPUT_SYNC_STATE_OPTIONS: SyncStateOptions<number, string> = {
+const MARGIN_INPUT_SYNC_STATE_OPTIONS: SyncedStateOptions<number, string> = {
   flowDown: (value) => String(value),
   flowUp: (value) => Number.parseFloat(value),
   canFlowUp: (value) => Number.parseFloat(value) >= 0,
 };
 export default function CustomMarginItems() {
   const { state: config, actions: configActions } = useConfig();
-  const [marginTopValue, setMarginTopValue] = syncState(
+  const [marginTopValue, setMarginTopValue] = createSyncedState(
     () => config.print.contentMarginTop,
     (value) => configActions.print.setMarginTop(value()),
     MARGIN_INPUT_SYNC_STATE_OPTIONS,
   );
-  const [marginBottomValue, setMarginBottomValue] = syncState(
+  const [marginBottomValue, setMarginBottomValue] = createSyncedState(
     () => config.print.contentMarginBottom,
     (value) => configActions.print.setMarginBottom(value()),
     MARGIN_INPUT_SYNC_STATE_OPTIONS,
   );
-  const [marginLeftValue, setMarginLeftValue] = syncState(
+  const [marginLeftValue, setMarginLeftValue] = createSyncedState(
     () => config.print.contentMarginLeft,
     (value) => configActions.print.setMarginLeft(value()),
     MARGIN_INPUT_SYNC_STATE_OPTIONS,
   );
-  const [marginRightValue, setMarginRightValue] = syncState(
+  const [marginRightValue, setMarginRightValue] = createSyncedState(
     () => config.print.contentMarginRight,
     (value) => configActions.print.setMarginRight(value()),
     MARGIN_INPUT_SYNC_STATE_OPTIONS,

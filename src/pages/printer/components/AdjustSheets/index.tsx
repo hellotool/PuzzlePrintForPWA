@@ -28,17 +28,17 @@ import type { SelectChangeEvent } from '@suid/material/Select';
 import type { ChangeEvent } from '@suid/types';
 import type { DataType } from 'csstype';
 import { type Accessor, createMemo, For, type JSX, Show } from 'solid-js';
-import { useInsets } from '@/features/insets';
 import { getAvailablePageSizes, pageSizeNameToCm } from '@/features/print';
-import CustomMarginItems from '@/pages/printer/components/AdjustSheets/CustomMarginItems';
-import { useConfig } from '@/pages/printer/contexts/ConfigContext';
-import type { PrintConfig } from '@/pages/printer/types/config';
+import { useInsets } from '@/shared/components/insets';
 import ListSwitchItem from '@/shared/components/list/ListSwitchItem';
 import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
-import { type SyncStateOptions, syncState } from '@/shared/hooks/syncState';
+import { createSyncedState, type SyncedStateOptions } from '@/shared/hooks/createSyncedState';
 import { usePreferredDarkMode } from '@/shared/hooks/usePreferredDarkMode';
 import { maybeAndroid } from '@/shared/utils/platform';
 import { mergeMultiSxProps } from '@/shared/utils/suid';
+import { useConfig } from '../../contexts/ConfigContext';
+import type { PrintConfig } from '../../types/config';
+import CustomMarginItems from './CustomMarginItems';
 
 function createPositiveIntegerInputLinter(value: Accessor<string>) {
   return createMemo(() => {
@@ -50,7 +50,7 @@ function createPositiveIntegerInputLinter(value: Accessor<string>) {
   });
 }
 
-const POSITIVE_INTEGER_INPUT_SYNC_STATE_OPTIONS: SyncStateOptions<number, string> = {
+const POSITIVE_INTEGER_INPUT_SYNC_STATE_OPTIONS: SyncedStateOptions<number, string> = {
   flowDown: (value) => String(value),
   flowUp: (value) => Number.parseInt(value),
   canFlowUp: (value) => Number.parseInt(value) > 0,
@@ -61,13 +61,13 @@ interface AdjustSheetsProps extends DrawerProps {}
 export default function AdjustSheets(props: AdjustSheetsProps) {
   const { state: config, actions: configActions } = useConfig();
 
-  const [columnsValue, setColumnsValue] = syncState(
+  const [columnsValue, setColumnsValue] = createSyncedState(
     () => config.layout.columns,
     (value) => configActions.layout.setColumns(value()),
     POSITIVE_INTEGER_INPUT_SYNC_STATE_OPTIONS,
   );
 
-  const [rowsValue, setRowsValue] = syncState(
+  const [rowsValue, setRowsValue] = createSyncedState(
     () => config.layout.rows,
     (value) => configActions.layout.setRows(value()),
     POSITIVE_INTEGER_INPUT_SYNC_STATE_OPTIONS,
@@ -138,28 +138,6 @@ export default function AdjustSheets(props: AdjustSheetsProps) {
         {/* 页面布局 */}
         <List>
           <ListSubheader>页面布局</ListSubheader>
-          {/* <ListSliderItem
-            onChange={handleColumnsChange}
-            sliderProps={{
-              step: 1,
-              marks: true,
-              min: 1,
-              max: 5,
-            }}
-            title="列数"
-            value={config.layout.columns}
-          />
-          <ListSliderItem
-            onChange={handleRowsChange}
-            sliderProps={{
-              step: 1,
-              marks: true,
-              min: 1,
-              max: 5,
-            }}
-            title="行数"
-            value={config.layout.rows}
-          /> */}
           <ListItem>
             <TextField
               label="列数"

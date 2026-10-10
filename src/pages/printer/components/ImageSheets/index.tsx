@@ -4,16 +4,16 @@ import CloseIcon from '@suid/icons-material/Close';
 import { alpha, Box, Drawer, Fade, Toolbar, Typography, useTheme } from '@suid/material';
 import type { DrawerProps } from '@suid/material/Drawer';
 import { createSignal, For, Show } from 'solid-js';
-import { useInsets } from '@/features/insets';
-import ImageItem from '@/pages/printer/components/ImageSheets/ImageItem';
-import useImages from '@/pages/printer/contexts/ImagesContext';
+import { useInsets } from '@/shared/components/insets';
 import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
 import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
 import { pickFiles } from '@/shared/utils/file';
 import { mergeMultiSxProps } from '@/shared/utils/suid';
+import { useImages } from '../../contexts/ImagesContext';
+import ImageItem from './ImageItem';
 
 interface ImageSheetsProps extends DrawerProps {
-  // biome-ignore lint/suspicious/noExplicitAny: false
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onClose?: (event: any, reason: 'backdropClick' | 'escapeKeyDown' | 'toolbarClick') => void;
   showCloseButton?: boolean;
 }

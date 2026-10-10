@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>哈兔拼图打印 — UI 重设计 v2「裁切台 · 打印工单」</title>
+<meta name="description" content="Material 2 重设计：印刷墨青主色、裁切台预览舞台、工单规格条、左侧图片池三栏流水线、序号证据链、粘贴/拖拽导入、PDF 导出" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+/* ==================================================================
+   设计系统「裁切台 · 打印工单」
+   主色：印刷墨青 Teal 700（印刷油墨语汇）
+   舞台：自愈裁切垫绿 + 1cm 网格（签名元素）
+   数据：Roboto Mono 承担一切工单读数（规格串 / 页码 / 序号）
+   ================================================================== */
+:root {
+  /* 色板 */
+  --ink-700: #00796b;         /* 印刷墨青：主操作 */
+  --ink-800: #00695c;
+  --ink-500: #00897b;
+  --ink-50:  #e0f2f1;
+  --ink-hover: rgba(0, 121, 107, .08);
+  --mat: #2f5a53;             /* 裁切垫绿 */
+  --mat-line-minor: rgba(255, 255, 255, .055);
+  --mat-line-major: rgba(255, 255, 255, .11);
+  --on-mat: rgba(255, 255, 255, .82);
+  --desk: #f1f3f4;            /* 工作台灰 */
+  --surface: #ffffff;
+  --text: rgba(0, 0, 0, .87);
+  --text-2: rgba(0, 0, 0, .60);
+  --text-3: rgba(0, 0, 0, .38);
+  --divider: rgba(0, 0, 0, .12);
+  --outline: rgba(0, 0, 0, .24);
+  --danger: #d93025;
+  --scrim: rgba(0, 0, 0, .32);
+  /* 阴影（M2 基准） */
+  --e1: 0 1px 2px rgba(0,0,0,.14), 0 1px 1px rgba(0,0,0,.10);
+  --e2: 0 2px 4px rgba(0,0,0,.12), 0 1px 3px rgba(0,0,0,.10);
+  --e8: 0 8px 24px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.10);
+  --e16: 0 16px 40px rgba(0,0,0,.24);
+  /* 间距（8dp 网格） */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  /* 尺寸 */
+  --appbar-h: 60px;
+  --pool-w: 252px;
+  --spec-w: 292px;
+  --tray-h: 96px;
+  --radius-ctl: 4px; --radius-card: 8px; --radius-sheet: 16px;
+  /* 字体 */
+  --font-ui: "Noto Sans SC", Roboto, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", "SF Mono", Consolas, "Courier New", monospace;
+  /* 动效 */
+  --t-std: .2s cubic-bezier(.4, 0, .2, 1);
+  --t-dec: .25s cubic-bezier(0, 0, .2, 1);
+}
+* { box-sizing: border-box; margin: 0; }
+[hidden] { display: none !important; }
+body { font-family: var(--font-ui); color: var(--text); background: #e6e9eb; }
+button { font: inherit; border: 0; background: none; cursor: pointer; color: inherit; padding: 0; }
+input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink-700); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.spacer { flex: 1; }
+
+/* ================== 原型外壳 ================== */
+.proto-header { max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s4) var(--s3); }
+.proto-header h1 { font-size: 20px; font-weight: 500; }
+.proto-header > p { color: var(--text-2); font-size: 13px; margin-top: var(--s1); }
+.mode-switch { display: flex; gap: var(--s2); margin-top: var(--s4); }
+.mode-switch button {
+  padding: 6px 16px; border: 1px solid var(--outline); border-radius: 20px;
+  font-size: 13px; color: var(--text-2); background: var(--surface); transition: var(--t-std);
+}
+.mode-switch button[aria-pressed="true"] { border-color: var(--ink-700); color: var(--ink-700); background: var(--ink-hover); }
+.mode-note { font-size: 12px; color: var(--text-3); margin-top: var(--s2); min-height: 16px; }
+.stage { display: flex; justify-content: center; padding: var(--s4) var(--s4) var(--s8); }
+
+/* ================== 应用窗口 ================== */
+.app {
+  background: var(--desk); position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: width var(--t-std), height var(--t-std);
+}
+body[data-mode="desktop"] .app { width: 1180px; height: 760px; border-radius: 10px; box-shadow: var(--e16); }
+body[data-mode="tablet"]  .app { width: 860px;  height: 680px; border-radius: 10px; box-shadow: var(--e16); }
+body[data-mode="phone"]   .app { width: 375px;  height: 760px; border-radius: 34px; border: 8px solid #202124; box-shadow: var(--e16); }
+
+/* ================== 工单条（AppBar） ================== */
+.jobbar {
+  height: var(--appbar-h); flex: none; display: flex; align-items: center; gap: var(--s3);
+  padding: 0 var(--s4); background: var(--surface); border-bottom: 1px solid var(--divider); z-index: 6;
+}
+.brand { display: flex; align-items: center; gap: var(--s2); flex: none; }
+.brand .logo {
+  width: 30px; height: 30px; border-radius: 7px; background: var(--ink-700); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;
+}
+.brand .title { font-size: 17px; font-weight: 500; }
+/* 工单规格串：印刷工单的规格栏，全部等宽数据 */
+.job-chips { display: flex; gap: var(--s2); overflow: hidden; }
+.job-chip {
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-2);
+  border: 1px solid var(--divider); border-radius: 4px; padding: 5px 10px;
+  background: var(--desk); white-space: nowrap; line-height: 1.2;
+}
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-2); font-size: 18px; transition: background var(--t-std); flex: none;
+}
+.icon-btn:hover { background: rgba(0,0,0,.06); }
+.icon-btn.filled { color: var(--ink-700); }
+.btn-outline {
+  color: var(--ink-700); border: 1px solid var(--ink-700); border-radius: var(--radius-ctl);
+  padding: 7px 16px; font-size: 14px; font-weight: 500; display: inline-flex; gap: var(--s2); align-items: center;
+  transition: background var(--t-std); white-space: nowrap;
+}
+.btn-outline:hover { background: var(--ink-hover); }
+.btn-contained {
+  background: var(--ink-700); color: #fff; border-radius: var(--radius-ctl);
+  padding: 8px 20px; font-size: 14px; font-weight: 500; box-shadow: var(--e1);
+  display: inline-flex; gap: var(--s2); align-items: center; transition: var(--t-std); white-space: nowrap;
+}
+.btn-contained:hover { box-shadow: var(--e2); background: var(--ink-800); }
+.btn-contained:disabled, .btn-outline:disabled { color: var(--text-3); border-color: var(--divider); box-shadow: none; background: transparent; cursor: default; }
+.btn-text { color: var(--ink-700); font-size: 13px; font-weight: 500; padding: 8px 10px; border-radius: var(--radius-ctl); }
+.btn-text:hover { background: var(--ink-hover); }
+.spec-toggle { display: none; }
+
+/* ---------- SVG 图标（统一 24 网格，fill = currentColor） ---------- */
+.icon { width: 18px; height: 18px; fill: currentColor; flex: none; }
+.icon.sm { width: 15px; height: 15px; }
+.icon.lg { width: 22px; height: 22px; }
+.icon-btn .icon { width: 20px; height: 20px; }
+
+/* ---------- 底部操作栏：工单收尾（三形态统一） ---------- */
+.actionbar {
+  flex: none; height: 56px; background: var(--surface); border-top: 1px solid var(--divider);
+  display: flex; align-items: center; gap: var(--s3); padding: 0 var(--s4); z-index: 6;
+}
+body[data-mode="phone"] .actionbar { padding-bottom: 16px; height: 72px; }
+.actionbar .reading {
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.actionbar .btn-outline { padding: 8px 14px; font-size: 13px; }
+.actionbar .btn-contained { padding: 8px 22px; font-size: 14px; }
+
+/* ================== 工作区：图片池 | 裁切台 | 工单设置 ================== */
+.workspace { flex: 1; display: flex; min-height: 0; position: relative; }
+
+/* ---------- 左：图片池（contact sheet） ---------- */
+.pool {
+  width: var(--pool-w); flex: none; background: var(--surface); border-right: 1px solid var(--divider);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.pool-head { padding: var(--s3) var(--s4) var(--s2); flex: none; }
+.pool-head .row1 { display: flex; align-items: center; justify-content: space-between; }
+.pool-head h2 { font-size: 15px; font-weight: 500; }
+.pool-head .count { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
+.paste-chip {
+  margin-top: var(--s2); display: flex; align-items: center; gap: var(--s2);
+  border: 1px dashed var(--ink-500); border-radius: var(--radius-ctl);
+  padding: 7px 10px; font-size: 12px; color: var(--ink-700); background: var(--ink-50);
+  width: 100%; text-align: left; transition: var(--t-std);
+}
+.paste-chip:hover { background: var(--ink-hover); }
+.paste-chip kbd {
+  font-family: var(--font-mono); font-size: 11px; background: #fff; border: 1px solid var(--divider);
+  border-bottom-width: 2px; border-radius: 3px; padding: 1px 5px; color: var(--text);
+}
+.pool-scroll { flex: 1; overflow-y: auto; padding: 0 var(--s3) var(--s2); scrollbar-width: thin; }
+.pool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.pool-thumb {
+  position: relative; border-radius: var(--radius-card); overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; background: #eef1f3; transition: var(--t-std);
+  aspect-ratio: 3 / 4;
+}
+.pool-thumb:hover { border-color: var(--ink-500); }
+.pool-thumb.selected { border-color: var(--ink-700); box-shadow: var(--e1); }
+.pool-thumb .idx {
+  position: absolute; left: 6px; top: 6px; font-family: var(--font-mono); font-size: 10px;
+  background: rgba(0,0,0,.55); color: #fff; border-radius: 3px; padding: 1px 5px; z-index: 2;
+}
+.pool-thumb .rm {
+  position: absolute; right: 4px; top: 4px; width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: #fff; font-size: 12px; display: none;
+  align-items: center; justify-content: center; z-index: 2;
+}
+.pool-thumb:hover .rm { display: inline-flex; }
+.pool-thumb .rm:hover { background: var(--danger); }
+.pool-thumb .grip {
+  position: absolute; right: 4px; bottom: 4px; color: rgba(255,255,255,.9); font-size: 12px;
+  letter-spacing: -1px; display: none; z-index: 2; text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+.pool-thumb:hover .grip { display: block; }
+.pool-empty { padding: var(--s4) var(--s2); font-size: 12px; color: var(--text-3); line-height: 1.7; }
+.pool-foot {
+  flex: none; border-top: 1px solid var(--divider); padding: var(--s2) var(--s4);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-2);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.pool-foot .privacy { font-family: var(--font-ui); color: var(--text-3); font-size: 11px; }
+
+/* ---------- 中：裁切台舞台（签名元素） ---------- */
+.stage-mat {
+  flex: 1; min-width: 0; position: relative; overflow-y: auto; scrollbar-width: thin;
+  padding: 28px var(--s6) var(--s8);
+  display: flex; flex-direction: column; align-items: center; gap: var(--s4);
+  /* 自愈裁切垫：1cm 细格 + 5cm 粗格 + 边缘压暗 */
+  background:
+    radial-gradient(130% 100% at 50% 38%, rgba(255,255,255,.05), transparent 62%),
+    linear-gradient(var(--mat-line-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mat-line-major) 1px, transparent 1px),
+    linear-gradient(var(--mat-line-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mat-line-minor) 1px, transparent 1px),
+    var(--mat);
+  background-size: auto, 40px 40px, 40px 40px, 8px 8px, 8px 8px, auto;
+  box-shadow: inset 0 0 60px rgba(0,0,0,.38);
+}
+/* 垫子上缘的标尺刻度 */
+.stage-mat::before {
+  content: ""; position: sticky; top: -20px; height: 16px; margin-bottom: -16px; z-index: 1;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.4) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.65) 0 1px, transparent 1px 40px);
+  background-size: 100% 6px, 100% 11px; background-repeat: repeat-x; background-position: bottom left;
+  width: 100%; pointer-events: none; opacity: .5;
+}
+.mat-drop {
+  position: absolute; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center;
+  background: rgba(0, 77, 68, .55); backdrop-filter: blur(1px);
+}
+.mat-drop.on { display: flex; }
+.mat-drop .card {
+  background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--e16);
+  padding: var(--s6) var(--s8); text-align: center; pointer-events: none;
+}
+.mat-drop .card b { font-size: 16px; font-weight: 500; display: block; }
+.mat-drop .card span { font-size: 13px; color: var(--text-2); display: block; margin-top: var(--s1); }
+
+/* 纸张 */
+.paper-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
+.paper {
+  background: var(--surface); box-shadow: var(--e8); border-radius: 2px; position: relative;
+  padding: 16px; display: flex; flex-direction: column; min-width: 0;
+}
+.paper .p-head {
+  flex: none; text-align: center; font-size: 9px; color: var(--text-3);
+  padding-bottom: 6px; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.paper .p-body { flex: 1; display: grid; min-height: 0; }
+.paper .p-foot {
+  flex: none; text-align: center; font-family: var(--font-mono); font-size: 9px; color: var(--text-3); padding-top: 6px;
+}
+.page-label { font-family: var(--font-mono); font-size: 12px; color: var(--on-mat); letter-spacing: .5px; }
+
+/* 裁切角线（crop marks）：印刷行业标准的出血角标 */
+.cropmark { position: absolute; width: 12px; height: 12px; pointer-events: none; }
+.cropmark.tl { left: -6px; top: -6px; border-left: 1px solid #444; border-top: 1px solid #444; }
+.cropmark.tr { right: -6px; top: -6px; border-right: 1px solid #444; border-top: 1px solid #444; }
+.cropmark.bl { left: -6px; bottom: -6px; border-left: 1px solid #444; border-bottom: 1px solid #444; }
+.cropmark.br { right: -6px; bottom: -6px; border-right: 1px solid #444; border-bottom: 1px solid #444; }
+
+/* 格子 */
+.cell {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  min-height: 0; min-width: 0; padding: 5px; cursor: pointer;
+}
+.cell + .cell.cut-v { border-left: 1px dashed rgba(0,0,0,.28); }
+.cell.cut-h { border-top: 1px dashed rgba(0,0,0,.28); }
+.cell.empty::after {
+  content: "＋"; color: rgba(0,0,0,.22); font-size: 22px; font-weight: 300; transition: var(--t-std);
+}
+.cell.empty:hover::after { color: var(--ink-700); }
+.cell:hover { outline: 1px dashed var(--ink-500); outline-offset: -2px; }
+.cell.selected { outline: 2px solid var(--ink-700); outline-offset: -2px; }
+/* 序号：证据链编号，等宽字体徽标 */
+.cell .no {
+  position: absolute; left: 8px; top: 8px; z-index: 3;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  background: var(--ink-700); color: #fff; border-radius: 3px; padding: 1px 6px; box-shadow: var(--e1);
+}
+.cell .tools {
+  position: absolute; right: 7px; top: 7px; z-index: 3; display: flex; gap: var(--s1);
+}
+.cell .tool {
+  height: 22px; padding: 0 9px; border-radius: 11px; font-size: 11px;
+  background: var(--ink-700); color: #fff; box-shadow: var(--e1); display: inline-flex; align-items: center; gap: 3px;
+}
+.cell .tool:hover { background: var(--ink-800); }
+.cell .tool.danger { background: var(--danger); }
+
+/* ---------- 凭证示意图（CSS 绘制的截图内容） ---------- */
+.voucher {
+  width: 100%; height: 100%; border-radius: 4px; overflow: hidden; background: #f5f6f8;
+  display: flex; flex-direction: column; padding: 8% 9% 6%; gap: 4%; min-height: 0;
+  border: 1px solid rgba(0,0,0,.05); transition: transform var(--t-std);
+}
+.v-head { display: flex; align-items: center; gap: 4%; min-height: 0; }
+.v-avatar { width: 9%; aspect-ratio: 1; border-radius: 3px; flex: none; }
+.v-name { font-size: .52em; color: var(--text-2); white-space: nowrap; overflow: hidden; }
+.v-amount { font-size: 1.05em; font-weight: 600; margin-top: 2%; letter-spacing: .3px; }
+.v-kv { display: flex; justify-content: space-between; font-size: .45em; color: var(--text-3); white-space: nowrap; overflow: hidden; }
+.v-line { height: 4%; border-radius: 3px; background: #e0e3e7; flex: none; }
+.v-bar {
+  margin-top: auto; height: 13%; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .48em; flex: none;
+}
+.t-wechat .v-avatar, .t-wechat .v-bar { background: #2aae67; }
+.t-alipay  .v-avatar, .t-alipay  .v-bar { background: #1677ff; }
+.t-bank    .v-avatar, .t-bank    .v-bar { background: #e65100; }
+/* 适配模式 */
+.paper[data-fit="cover"] .voucher { border-radius: 0; border: 0; }
+.paper[data-fit="pad"] .voucher { border-radius: 0; border: 0; background: #fff; }
+
+/* ---------- 裁切台空状态 ---------- */
+.mat-empty {
+  position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+  padding: var(--s4);
+}
+.mat-empty .card {
+  background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--e16);
+  padding: var(--s6); max-width: 380px; text-align: center;
+}
+.mat-empty h3 { font-size: 17px; font-weight: 500; }
+.mat-empty p { font-size: 13px; color: var(--text-2); margin-top: var(--s2); line-height: 1.7; }
+.mat-empty .acts { display: flex; gap: var(--s2); justify-content: center; margin-top: var(--s4); flex-wrap: wrap; }
+.mat-empty .privacy {
+  margin-top: var(--s4); font-size: 12px; color: var(--ink-700); background: var(--ink-50);
+  border-radius: var(--radius-ctl); padding: 6px 10px; display: inline-flex; gap: 6px; align-items: center;
+}
+.ghost-paper {
+  background: rgba(255,255,255,.16); border: 1px dashed rgba(255,255,255,.35); border-radius: 2px;
+  width: 260px; aspect-ratio: 210 / 297; margin-top: var(--s6); position: relative;
+}
+.ghost-paper::after {
+  content: "A4"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-family: var(--font-mono); font-size: 15px; color: var(--on-mat); letter-spacing: 2px;
+}
+
+/* ---------- 右：工单设置面板 ---------- */
+.spec {
+  width: var(--spec-w); flex: none; background: var(--surface); border-left: 1px solid var(--divider);
+  overflow-y: auto; padding: var(--s2) var(--s4) var(--s6); scrollbar-width: thin; z-index: 6;
+}
+.spec h2 { font-size: 15px; font-weight: 500; padding: var(--s3) 0 var(--s1); }
+.group-title {
+  font-size: 11px; font-weight: 500; letter-spacing: 1px; color: var(--ink-700);
+  padding: var(--s4) 0 var(--s1); display: flex; align-items: center; gap: var(--s2);
+}
+.group-title::after { content: ""; flex: 1; height: 1px; background: var(--ink-50); }
+.row-line {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  padding: 9px 0; font-size: 14px; min-height: 44px; border-bottom: 1px solid rgba(0,0,0,.05);
+}
+.row-line .label { display: flex; flex-direction: column; gap: 1px; }
+.row-line .sub { font-size: 11px; color: var(--text-3); }
+.field {
+  border: 1px solid var(--outline); border-radius: var(--radius-ctl); padding: 6px 10px;
+  font-size: 13px; display: flex; justify-content: space-between; min-width: 138px; background: var(--surface);
+  color: var(--text-2); gap: var(--s3); align-items: center;
+}
+.field::after { content: "▾"; font-size: 11px; }
+.field.plain::after { content: ""; }
+.field input { border: 0; outline: 0; width: 100%; background: transparent; }
+.seg { display: flex; border: 1px solid var(--outline); border-radius: var(--radius-ctl); overflow: hidden; flex: none; }
+.seg button { padding: 5px 12px; font-size: 12px; color: var(--text-2); transition: var(--t-std); }
+.seg button + button { border-left: 1px solid var(--divider); }
+.seg button.on { background: var(--ink-hover); color: var(--ink-700); font-weight: 500; }
+.switch {
+  width: 36px; height: 14px; border-radius: 8px; background: rgba(0,0,0,.26); position: relative;
+  flex: none; transition: background var(--t-std);
+}
+.switch::after {
+  content: ""; position: absolute; top: -3px; left: 0; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: var(--e1); transition: var(--t-std);
+}
+.switch.on { background: rgba(0,137,123,.5); }
+.switch.on::after { left: 16px; background: var(--ink-700); }
+.stepper { display: flex; align-items: center; gap: var(--s1); }
+.stepper button {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--desk); border: 1px solid var(--divider);
+  font-size: 16px; color: var(--text-2); display: inline-flex; align-items: center; justify-content: center;
+  transition: var(--t-std);
+}
+.stepper button:hover { border-color: var(--ink-500); color: var(--ink-700); }
+.stepper b { min-width: 22px; text-align: center; font-weight: 500; font-family: var(--font-mono); font-size: 15px; }
+.auto-layout { width: 100%; margin: var(--s2) 0; justify-content: center; }
+.spec-foot { display: flex; justify-content: center; padding-top: var(--s4); }
+
+/* ---------- 平板：底部图片轨道 ---------- */
+.tray {
+  display: none; flex: none; background: var(--surface); border-top: 1px solid var(--divider);
+  align-items: center; gap: var(--s3); padding: 0 var(--s4); position: relative; z-index: 5;
+  height: 36px; overflow: hidden; transition: height var(--t-std);
+}
+.tray .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--outline); position: absolute; top: 6px; left: 50%; transform: translateX(-50%); }
+.tray-title { font-size: 13px; font-weight: 500; flex: none; }
+.tray-title .count { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); margin-left: 4px; }
+.tray-items { flex: 1; display: flex; gap: var(--s2); overflow-x: auto; padding: 14px 0 8px; scrollbar-width: thin; }
+.tray .thumb {
+  width: 44px; height: 56px; border-radius: 6px; flex: none; border: 2px solid transparent;
+  background: #eef1f3; position: relative; overflow: hidden; cursor: pointer; transition: var(--t-std);
+}
+.tray .thumb:hover { border-color: var(--ink-500); }
+.tray .thumb.selected { border-color: var(--ink-700); }
+.tray .thumb .idx {
+  position: absolute; left: 3px; top: 3px; font-family: var(--font-mono); font-size: 9px;
+  background: rgba(0,0,0,.55); color: #fff; border-radius: 2px; padding: 0 4px; z-index: 2;
+}
+.tray .thumb.add {
+  border: 2px dashed var(--ink-500); color: var(--ink-700); font-size: 18px; background: var(--ink-50);
+  display: flex; align-items: center; justify-content: center;
+}
+.tray-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); white-space: nowrap; }
+.tray .icon-btn { width: 32px; height: 32px; font-size: 15px; }
+
+/* ---------- 手机：底部栏 + BottomSheet ---------- */
+.bottombar {
+  display: none; flex: none; background: var(--surface); border-top: 1px solid var(--divider);
+  align-items: center; gap: var(--s3); padding: var(--s2) var(--s4); z-index: 6;
+}
+.bb-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px;
+  color: var(--text-2); padding: 4px 12px; border-radius: var(--radius-ctl); transition: var(--t-std);
+}
+.bb-tab.on { color: var(--ink-700); background: var(--ink-hover); }
+.scrim {
+  position: absolute; inset: 0; background: var(--scrim); opacity: 0; pointer-events: none;
+  transition: opacity var(--t-std); z-index: 8;
+}
+.scrim.on { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; box-shadow: var(--e16);
+  transform: translateY(105%); transition: transform var(--t-dec);
+  display: flex; flex-direction: column; max-height: 78%;
+}
+.sheet.on { transform: none; }
+.sheet-grab { width: 40px; height: 4px; border-radius: 2px; background: var(--outline); margin: 10px auto 4px; flex: none; }
+.sheet-head { display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s4) var(--s2); flex: none; }
+.sheet-head h2 { font-size: 15px; font-weight: 500; flex: 1; }
+.sheet-head .count { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
+.sheet-body { overflow-y: auto; padding: 0 var(--s4) var(--s6); }
+.sheet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); }
+.sheet-grid .pool-thumb { aspect-ratio: 3 / 4; }
+#sheet-settings-view { display: none; }
+
+/* ---------- 形态差异 ---------- */
+/* 桌面：三栏全露，工单条含规格串与双主操作 */
+body[data-mode="desktop"] .pool { display: flex; }
+/* 平板：图片池转底部轨道，设置转覆盖抽屉 */
+body[data-mode="tablet"] .pool { display: none; }
+body[data-mode="tablet"] .tray { display: flex; }
+body[data-mode="tablet"] .tray.expanded { height: var(--tray-h); }
+body[data-mode="tablet"] .spec {
+  position: absolute; top: 0; right: 0; bottom: 0; box-shadow: var(--e8);
+  transform: translateX(100%); transition: transform var(--t-dec); border-left: 0;
+}
+body[data-mode="tablet"].spec-open .spec { transform: none; }
+body[data-mode="tablet"] .spec-toggle { display: inline-flex; }
+body[data-mode="tablet"] .job-chips { display: none; }
+/* 手机：底部栏 + Sheet，工单条精简 */
+body[data-mode="phone"] .pool { display: none; }
+body[data-mode="phone"] .spec { display: none; }
+body[data-mode="phone"] .job-chips { display: none; }
+body[data-mode="phone"] .bottombar { display: flex; }
+body[data-mode="phone"] .stage-mat { padding: 20px var(--s4) var(--s6); }
+</style>
+</head>
+<body data-mode="desktop">
+
+<!-- SVG 图标库（Material 24 网格） -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></symbol>
+  <symbol id="i-paste" viewBox="0 0 24 24"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></symbol>
+  <symbol id="i-add" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-8 8s3.57 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><path d="m7.5 5.6L10 7 8.6 4.5 7.5 2 6.4 4.5 5 7l2.5-1.4zm12 9.8L17 14l1.4 2.5 1.1 2.5 1.1-2.5L22 14l-2.5 1.4zM22 2l-1.1 2.5L19.5 7 22 5.6l2.5 1.4-1.1-2.5L22 2zm-7.63 5.29a1 1 0 0 0-1.41 0L1.29 18.96a1 1 0 0 0 0 1.41l2.34 2.34a1 1 0 0 0 1.41 0L16.7 11.05a1 1 0 0 0 0-1.41l-2.33-2.35zm-1.03 5.49-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></symbol>
+  <symbol id="i-drag" viewBox="0 0 24 24"><path d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></symbol>
+</svg>
+
+<header class="proto-header">
+  <h1>哈兔拼图打印 — UI 重设计 v2「裁切台 · 打印工单」</h1>
+  <p>Material 2 · 印刷墨青主色 / 裁切垫预览舞台 / 等宽工单读数 · 左图片池 → 中裁切台 → 右工单设置 · 覆盖现状 + P0/P1 规划功能</p>
+  <div class="mode-switch" role="group" aria-label="设备形态切换">
+    <button data-mode="desktop" aria-pressed="true">桌面（≥1200）</button>
+    <button data-mode="tablet" aria-pressed="false">平板（900–1200）</button>
+    <button data-mode="phone" aria-pressed="false">手机（&lt;900）</button>
+  </div>
+  <p class="mode-note" id="modeNote"></p>
+</header>
+
+<main class="stage">
+  <div class="app" id="app">
+
+    <!-- ============ 工单条（AppBar） ============ -->
+    <header class="jobbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">拼</span>
+        <span class="title">哈兔拼图打印</span>
+      </div>
+      <div class="job-chips" id="jobChips" aria-label="当前工单规格"></div>
+      <span class="spacer"></span>
+      <button class="icon-btn spec-toggle" id="specToggle" aria-label="打开设置面板"><svg class="icon"><use href="#i-tune"/></svg></button>
+      <button class="icon-btn" id="moreBtn" aria-label="更多选项" aria-haspopup="true"><svg class="icon"><use href="#i-more"/></svg></button>
+    </header>
+
+    <!-- ============ 工作区 ============ -->
+    <div class="workspace">
+
+      <!-- 左：图片池 -->
+      <aside class="pool" aria-label="图片池">
+        <div class="pool-head">
+          <div class="row1">
+            <h2>图片</h2>
+            <span class="count" id="poolCount"></span>
+          </div>
+          <button class="paste-chip" id="pasteChip" title="模拟 Ctrl+V 粘贴截图">
+            <svg class="icon sm"><use href="#i-paste"/></svg>
+            <span>粘贴截图 <kbd>Ctrl</kbd>+<kbd>V</kbd></span>
+            <span class="spacer"></span>
+            <svg class="icon sm"><use href="#i-add"/></svg>
+          </button>
+          <button class="btn-outline" id="addBtn" style="width:100%;justify-content:center;margin-top:8px;padding:6px 12px;">
+            <svg class="icon sm"><use href="#i-add"/></svg> 添加图片 / 文件夹
+          </button>
+        </div>
+        <div class="pool-scroll">
+          <div class="pool-grid" id="poolGrid"></div>
+          <div class="pool-empty" id="poolEmpty" hidden>
+            还没有图片。<br />粘贴截图、拖入文件或点击「添加图片」。
+          </div>
+        </div>
+        <div class="pool-foot">
+          <span id="poolMeta"></span>
+          <span class="privacy" title="隐私说明">无痕 · 不上传不留存</span>
+        </div>
+      </aside>
+
+      <!-- 中：裁切台 -->
+      <section class="stage-mat" id="mat" aria-label="纸张预览（裁切台）">
+        <div class="mat-empty" id="matEmpty" hidden>
+          <div class="card">
+            <h3>把凭证截图放到纸上</h3>
+            <p>粘贴、拖入或选择图片，应用会把它们按网格拼到纸上，<br />打印后沿裁切线分开即可归档。</p>
+            <div class="acts">
+              <button class="btn-contained" data-act="paste"><svg class="icon sm"><use href="#i-paste"/></svg> 粘贴截图</button>
+              <button class="btn-outline" data-act="pick"><svg class="icon sm"><use href="#i-add"/></svg> 选择图片</button>
+            </div>
+            <span class="privacy"><svg class="icon sm"><use href="#i-lock"/></svg> 图片只在内存中，关闭页面即消失</span>
+            <div class="ghost-paper" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div id="papers" style="display:contents;"></div>
+        <div class="mat-drop" id="matDrop">
+          <div class="card"><b>松手即添加</b><span>支持多张图片与整个文件夹</span></div>
+        </div>
+      </section>
+
+      <!-- 右：工单设置 -->
+      <aside class="spec" id="spec" aria-label="打印设置">
+        <h2>设置</h2>
+
+        <div class="group-title">版面</div>
+        <div class="row-line"><span class="label">列数</span>
+          <span class="stepper"><button data-dim="cols" data-delta="-1" aria-label="列数减一">−</button><b id="colsVal">3</b><button data-dim="cols" data-delta="1" aria-label="列数加一">＋</button></span>
+        </div>
+        <div class="row-line"><span class="label">行数</span>
+          <span class="stepper"><button data-dim="rows" data-delta="-1" aria-label="行数减一">−</button><b id="rowsVal">1</b><button data-dim="rows" data-delta="1" aria-label="行数加一">＋</button></span>
+        </div>
+        <button class="btn-outline auto-layout" id="autoBtn"><svg class="icon sm"><use href="#i-auto"/></svg> 自动排版</button>
+
+        <div class="group-title">图片适配</div>
+        <div class="row-line"><span class="label">格内适配<span class="sub">长图建议用「留白」</span></span>
+          <span class="seg" id="fitSeg">
+            <button data-val="pad" class="on">留白</button>
+            <button data-val="cover">填满</button>
+          </span>
+        </div>
+
+        <div class="group-title">纸张</div>
+        <div class="row-line"><span class="label">纸张尺寸</span><span class="field" id="sizeField">A4 · 21×29.7cm</span></div>
+        <div class="row-line"><span class="label">方向</span>
+          <span class="seg" id="orientSeg"><button data-val="portrait" class="on">纵向</button><button data-val="landscape">横向</button></span>
+        </div>
+        <div class="row-line"><span class="label">页边距</span><span class="field" id="marginField">默认</span></div>
+
+        <div class="group-title">裁切</div>
+        <div class="row-line"><span class="label">裁切网格线</span><button class="switch on" data-switch="cutlines" role="switch" aria-checked="true" aria-label="裁切网格线"></button></div>
+        <div class="row-line"><span class="label">裁切角线<span class="sub">出血位角标，方便对齐裁刀</span></span><button class="switch" data-switch="cropmarks" role="switch" aria-checked="false" aria-label="裁切角线"></button></div>
+
+        <div class="group-title">编号 <span style="font-weight:400;color:var(--text-3);letter-spacing:0">· 证据链</span></div>
+        <div class="row-line"><span class="label">显示序号</span><button class="switch on" data-switch="numbers" role="switch" aria-checked="true" aria-label="显示序号"></button></div>
+        <div class="row-line"><span class="label">序号样式</span>
+          <span class="seg" id="numStyleSeg">
+            <button data-val="hash" class="on">#1</button>
+            <button data-val="plain">1</button>
+            <button data-val="circle">①</button>
+          </span>
+        </div>
+
+        <div class="group-title">页眉页脚</div>
+        <div class="row-line"><span class="label">页眉标题</span><span class="field plain" style="min-width:150px;"><input id="headerInput" value="2026-10 报销凭证" aria-label="页眉标题" /></span></div>
+        <div class="row-line"><span class="label">页眉日期</span><button class="switch on" data-switch="headerDate" role="switch" aria-checked="true" aria-label="页眉日期"></button></div>
+        <div class="row-line"><span class="label">页脚页码</span><button class="switch on" data-switch="footerPage" role="switch" aria-checked="true" aria-label="页脚页码"></button></div>
+
+        <div class="group-title">预览</div>
+        <div class="row-line"><span class="label">灰度预览<span class="sub">仅影响屏幕显示，不影响打印</span></span><button class="switch" data-switch="gray" role="switch" aria-checked="false" aria-label="灰度预览"></button></div>
+
+        <div class="spec-foot"><button class="btn-text" id="resetBtn">恢复默认设置</button></div>
+      </aside>
+
+      <div class="scrim" id="specScrim"></div>
+    </div>
+
+    <!-- ============ 平板：底部图片轨道 ============ -->
+    <footer class="tray" id="tray" aria-label="图片轨道">
+      <span class="grab" id="trayGrab" role="button" aria-label="展开或折叠图片轨道"></span>
+      <span class="tray-title">图片<span class="count" id="trayCount"></span></span>
+      <div class="tray-items" id="trayItems"></div>
+      <span class="tray-meta" id="trayMeta"></span>
+      <button class="icon-btn" id="trayAdd" aria-label="添加图片"><svg class="icon"><use href="#i-add"/></svg></button>
+      <button class="icon-btn" id="trayToggle" aria-label="展开或折叠图片轨道"><svg class="icon"><use href="#i-up"/></svg></button>
+    </footer>
+
+    <!-- 底部操作栏：工单收尾（三形态统一） -->
+    <footer class="actionbar" aria-label="工单操作">
+      <span class="reading" id="abReading"></span>
+      <span class="spacer"></span>
+      <button class="btn-outline" id="pdfBtn"><svg class="icon sm"><use href="#i-download"/></svg> 导出 PDF</button>
+      <button class="btn-contained" id="printBtn"><svg class="icon sm"><use href="#i-print"/></svg> 打印</button>
+    </footer>
+
+    <!-- ============ 手机：底部栏 + BottomSheet ============ -->
+    <div class="scrim" id="sheetScrim"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="面板">
+      <span class="sheet-grab"></span>
+      <div id="sheet-images-view">
+        <div class="sheet-head">
+          <h2>图片</h2><span class="count" id="sheetCount"></span>
+          <span class="spacer"></span>
+          <button class="btn-contained" id="sheetAdd" style="padding:6px 14px;"><svg class="icon sm"><use href="#i-add"/></svg> 添加</button>
+        </div>
+        <div class="sheet-body sheet-grid" id="sheetGrid"></div>
+      </div>
+      <div id="sheet-settings-view">
+        <div class="sheet-head"><h2>设置</h2></div>
+        <div class="sheet-body" id="sheetSettingsBody"></div>
+      </div>
+    </div>
+    <nav class="bottombar" aria-label="主操作">
+      <button class="bb-tab" data-sheet="images"><svg class="icon"><use href="#i-image"/></svg>图片</button>
+      <button class="bb-tab" data-sheet="settings"><svg class="icon"><use href="#i-tune"/></svg>设置</button>
+    </nav>
+  </div>
+</main>
+
+<script>
+/* ================== 演示数据（数据即演示，非应用逻辑） ================== */
+const POOL = [
+  { brand: 'wechat', name: '王女士',  amount: '¥ 1,200.00', kv: '微信转账 · 10-01 20:14', state: '已收款' },
+  { brand: 'alipay', name: '李经理',  amount: '¥ 3,500.00', kv: '支付宝转账 · 10-02 11:03', state: '交易成功' },
+  { brand: 'wechat', name: '订单 #8841', amount: '¥ 860.00', kv: '订单详情 · 10-03', state: '已支付' },
+  { brand: 'alipay', name: '陈先生',  amount: '¥ 450.00',  kv: '微信转账 · 10-05 09:40', state: '已收款' },
+  { brand: 'bank',   name: '工商银行', amount: '¥ 2,000.00', kv: '电子回单 · 10-06', state: '转账成功' },
+  { brand: 'wechat', name: '赵老师',  amount: '¥ 128.00',  kv: '微信红包 · 10-08', state: '已领取' },
+  { brand: 'alipay', name: '采购款',  amount: '¥ 6,600.00', kv: '支付宝转账 · 10-09 15:22', state: '交易成功' },
+];
+const BAR = ['即时到账', '即时到账', '在线支付', '即时到账', '实时入账', '—', '即时到账'];
+
+const DEFAULTS = {
+  cols: 3, rows: 1, fit: 'pad', size: 'A4', orient: 'portrait', margin: 'default',
+  cutlines: true, cropmarks: false, numbers: true, numStyle: 'hash',
+  headerText: '2026-10 报销凭证', headerDate: true, footerPage: true, gray: false,
+};
+const SIZES = { A4: [21, 29.7], A5: [14.8, 21], Letter: [21.6, 27.9], B5: [17.6, 25] };
+const state = {
+  ...structuredClone(DEFAULTS),
+  images: POOL.slice(0, 7).map((v, i) => ({ ...v, rot: 0 })),
+  selected: null, poolNext: 0,
+};
+
+const $ = (s) => document.querySelector(s);
+const perPage = () => state.cols * state.rows;
+const pages = () => Math.max(1, Math.ceil(state.images.length / perPage()));
+const paperSize = () => {
+  const [w, h] = SIZES[state.size];
+  return state.orient === 'landscape' ? [h, w] : [w, h];
+};
+const numLabel = (i) => state.numStyle === 'hash' ? `#${i + 1}` : state.numStyle === 'circle' ? `${'①②③④⑤⑥⑦⑧⑨⑩'[i % 10]}` : `${i + 1}`;
+
+function voucherHTML(v, gi) {
+  const rot = v.rot ? ` style="transform:rotate(${v.rot}deg)"` : '';
+  return `<div class="voucher t-${v.brand}"${rot}>
+    <div class="v-head"><span class="v-avatar"></span><span class="v-name">${v.name}</span></div>
+    <div class="v-amount">${v.amount}</div>
+    <div class="v-kv"><span>${v.kv}</span><span>${v.state}</span></div>
+    <div class="v-line" style="width:${58 + (gi % 3) * 14}%"></div>
+    <div class="v-bar">${BAR[gi % BAR.length]}</div>
+  </div>`;
+}
+
+function render() {
+  const [pw, ph] = paperSize();
+  const ar = pw / ph;
+  const paperW = document.body.dataset.mode === 'phone' ? Math.min(255, 375 - 60) : ar >= 1 ? 430 : 430 * ar;
+  const papers = $('#papers');
+  papers.innerHTML = '';
+  $('#matEmpty').hidden = state.images.length > 0;
+
+  for (let p = 0; p < pages(); p++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'paper-wrap';
+    const paper = document.createElement('div');
+    paper.className = 'paper';
+    paper.dataset.fit = state.fit;
+    paper.style.width = `${paperW}px`;
+    paper.style.aspectRatio = `${ar}`;
+    if (state.gray) paper.style.filter = 'grayscale(1)';
+    if (state.cropmarks) paper.innerHTML = '<i class="cropmark tl"></i><i class="cropmark tr"></i><i class="cropmark bl"></i><i class="cropmark br"></i>';
+
+    const hasHead = state.headerText.trim() || state.headerDate;
+    if (hasHead) {
+      const head = document.createElement('div');
+      head.className = 'p-head';
+      head.textContent = [state.headerText.trim(), state.headerDate ? '2026-10-04' : ''].filter(Boolean).join(' · ');
+      paper.append(head);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'p-body';
+    body.style.gridTemplateColumns = `repeat(${state.cols},1fr)`;
+    body.style.gridTemplateRows = `repeat(${state.rows},1fr)`;
+    for (let c = 0; c < perPage(); c++) {
+      const gi = p * perPage() + c;
+      const v = state.images[gi];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (state.cutlines && c % state.cols !== 0) cell.classList.add('cut-v');
+      if (state.cutlines && c >= state.cols) cell.classList.add('cut-h');
+      cell.dataset.idx = gi;
+      if (v) {
+        if (state.numbers) {
+          const no = document.createElement('span');
+          no.className = 'no'; no.textContent = numLabel(gi);
+          cell.append(no);
+        }
+        if (state.selected === gi) {
+          cell.classList.add('selected');
+          cell.insertAdjacentHTML('beforeend', `<div class="tools">
+            <button class="tool" data-rot="${gi}" title="旋转 90°" aria-label="旋转 90°"><svg class="icon" style="width:13px;height:13px"><use href="#i-rotate"/></svg></button>
+            <button class="tool" data-rep="${gi}">替换</button>
+            <button class="tool danger" data-rm="${gi}" title="删除" aria-label="删除"><svg class="icon" style="width:12px;height:12px"><use href="#i-close"/></svg></button>
+          </div>`);
+        }
+        cell.insertAdjacentHTML('beforeend', voucherHTML(v, gi));
+      } else {
+        cell.classList.add('empty');
+      }
+      body.append(cell);
+    }
+    paper.append(body);
+    if (state.footerPage) {
+      const foot = document.createElement('div');
+      foot.className = 'p-foot';
+      foot.textContent = `第 ${p + 1} 页 / 共 ${pages()} 页`;
+      paper.append(foot);
+    }
+    const label = document.createElement('div');
+    label.className = 'page-label';
+    label.textContent = `第 ${p + 1} 页`;
+    wrap.append(paper, label);
+    papers.append(wrap);
+  }
+
+  /* 工单条读数 */
+  $('#jobChips').innerHTML =
+    `<span class="job-chip">${state.size} · ${state.orient === 'landscape' ? '横向' : '纵向'}</span>` +
+    `<span class="job-chip">${state.cols} × ${state.rows}</span>` +
+    `<span class="job-chip">${state.images.length} 张 / ${pages()} 页</span>`;
+  $('#poolCount').textContent = `${state.images.length} 张`;
+  $('#poolMeta').textContent = `${state.images.length} 张 · ${pages()} 页`;
+  $('#colsVal').textContent = state.cols;
+  $('#rowsVal').textContent = state.rows;
+  $('#poolEmpty').hidden = state.images.length > 0;
+  $('#printBtn').disabled = state.images.length === 0;
+  $('#abReading').textContent = `${state.size} ${state.orient === 'landscape' ? '横向' : '纵向'} · ${state.cols}×${state.rows} · ${state.images.length} 张 / ${pages()} 页`;
+  $('#sizeField').firstChild.textContent = `${state.size} · ${SIZES[state.size][0]}×${SIZES[state.size][1]}cm`;
+
+  const thumbHTML = (v, gi) => `<div class="pool-thumb${state.selected === gi ? ' selected' : ''}" data-jump="${gi}" title="${v.kv}">
+    <span class="idx">${numLabel(gi)}</span>
+    <button class="rm" data-rm="${gi}" aria-label="删除这张图片"><svg class="icon" style="width:12px;height:12px"><use href="#i-close"/></svg></button>
+    <span class="grip" aria-hidden="true"><svg class="icon" style="width:14px;height:14px"><use href="#i-drag"/></svg></span>
+    ${voucherHTML(v, gi)}
+  </div>`;
+  $('#poolGrid').innerHTML = state.images.map((v, gi) => thumbHTML(v, gi)).join('');
+  $('#trayCount').textContent = `(${state.images.length})`;
+  $('#trayMeta').textContent = `${pages()} 页`;
+  $('#trayItems').innerHTML = state.images.map((v, gi) =>
+    `<div class="thumb${state.selected === gi ? ' selected' : ''}" data-jump="${gi}" title="${v.kv}"><span class="idx">${gi + 1}</span>${voucherHTML(v, gi)}</div>`
+  ).join('') + `<button class="thumb add" id="trayAddInner" aria-label="添加图片"><svg class="icon" style="width:18px;height:18px"><use href="#i-add"/></svg></button>`;
+  $('#sheetCount').textContent = `(${state.images.length})`;
+  $('#sheetGrid').innerHTML = state.images.map((v, gi) => thumbHTML(v, gi)).join('');
+}
+
+function addImage() {
+  const src = POOL[state.poolNext++ % POOL.length];
+  state.images.push({ ...src, rot: 0 });
+  render();
+}
+
+/* ================== 交互：裁切台 ================== */
+$('#mat').addEventListener('click', (e) => {
+  const rm = e.target.closest('[data-rm]');
+  const rep = e.target.closest('[data-rep]');
+  const rot = e.target.closest('[data-rot]');
+  if (rm) { state.images.splice(+rm.dataset.rm, 1); state.selected = null; return render(); }
+  if (rep) { const i = +rep.dataset.rep; state.images[i] = { ...POOL[state.poolNext++ % POOL.length], rot: 0 }; state.selected = i; return render(); }
+  if (rot) { const i = +rot.dataset.rot; state.images[i].rot = (state.images[i].rot + 90) % 360; return render(); }
+  const cell = e.target.closest('.cell');
+  if (cell) {
+    const i = +cell.dataset.idx;
+    state.selected = state.selected === i ? null : i;
+    render();
+  }
+});
+$('#mat').addEventListener('click', (e) => {
+  const act = e.target.closest('[data-act]');
+  if (act) addImage();
+});
+
+/* ================== 交互：图片池 / 轨道 / Sheet 网格 ================== */
+for (const id of ['poolGrid', 'trayItems', 'sheetGrid']) {
+  $('#' + id).addEventListener('click', (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (rm && e.currentTarget.id !== 'trayItems') { state.images.splice(+rm.dataset.rm, 1); state.selected = null; return render(); }
+    const jump = e.target.closest('[data-jump]');
+    if (jump) {
+      const i = +jump.dataset.jump;
+      state.selected = state.selected === i ? null : i;
+      render();
+      document.querySelector(`.cell[data-idx="${i}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (e.currentTarget.id === 'sheetGrid') closeSheet();
+    }
+    if (e.target.closest('#trayAddInner')) { addImage(); }
+  });
+}
+$('#addBtn').addEventListener('click', addImage);
+$('#pasteChip').addEventListener('click', addImage);
+$('#trayAdd').addEventListener('click', addImage);
+$('#sheetAdd').addEventListener('click', addImage);
+
+/* ================== 交互：拖拽（演示：拖入垫子即可添加） ================== */
+const matEl = $('#mat');
+let dragDepth = 0;
+matEl.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; $('#matDrop').classList.add('on'); });
+matEl.addEventListener('dragover', (e) => e.preventDefault());
+matEl.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#matDrop').classList.remove('on'); } });
+matEl.addEventListener('drop', (e) => { e.preventDefault(); dragDepth = 0; $('#matDrop').classList.remove('on'); addImage(); });
+
+/* ================== 交互：设置面板 ================== */
+function bindSpec(root) {
+  root.addEventListener('click', (e) => {
+    const st = e.target.closest('[data-dim]');
+    if (st) {
+      const d = +st.dataset.delta;
+      if (st.dataset.dim === 'cols') state.cols = Math.min(6, Math.max(1, state.cols + d));
+      else state.rows = Math.min(5, Math.max(1, state.rows + d));
+      return render();
+    }
+    const sw = e.target.closest('[data-switch]');
+    if (sw) { sw.classList.toggle('on'); sw.setAttribute('aria-checked', sw.classList.contains('on')); state[sw.dataset.switch] = sw.classList.contains('on'); return render(); }
+    const sg = e.target.closest('.seg button');
+    if (sg) {
+      sg.parentElement.querySelectorAll('button').forEach((b) => b.classList.remove('on'));
+      sg.classList.add('on');
+      const key = sg.parentElement.id.replace('Seg', '');
+      state[key === 'orient' ? 'orient' : key === 'fit' ? 'fit' : 'numStyle'] = sg.dataset.val;
+      return render();
+    }
+  });
+}
+bindSpec($('#spec'));
+
+$('#autoBtn').addEventListener('click', () => {
+  /* 演示：按张数与常见凭证比例推荐，横向凭证多用行 */
+  const n = state.images.length || 1;
+  state.orient = n > 4 ? 'portrait' : 'landscape';
+  state.cols = n > 6 ? 3 : 2;
+  state.rows = Math.max(1, Math.min(3, Math.round(n / state.cols)));
+  syncSpecUI(); render();
+});
+$('#resetBtn').addEventListener('click', () => {
+  Object.assign(state, structuredClone(DEFAULTS));
+  syncSpecUI(); render();
+});
+$('#headerInput').addEventListener('input', (e) => { state.headerText = e.target.value; render(); });
+
+/* 循环切换演示：纸张尺寸 / 页边距 */
+$('#sizeField').addEventListener('click', () => {
+  const keys = Object.keys(SIZES);
+  state.size = keys[(keys.indexOf(state.size) + 1) % keys.length];
+  syncSpecUI(); render();
+});
+$('#marginField').addEventListener('click', () => {
+  const ms = ['默认', '窄', '自定义'];
+  $('#marginField').firstChild.textContent = ms[(ms.indexOf($('#marginField').firstChild.textContent) + 1) % ms.length];
+});
+
+function syncSpecUI() {
+  $('#orientSeg').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.val === state.orient));
+  $('#fitSeg').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.val === state.fit));
+  $('#numStyleSeg').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.val === state.numStyle));
+  document.querySelectorAll('[data-switch]').forEach((sw) => {
+    const on = !!state[sw.dataset.switch];
+    sw.classList.toggle('on', on); sw.setAttribute('aria-checked', on);
+  });
+  $('#headerInput').value = state.headerText;
+}
+
+/* ================== 主操作 ================== */
+$('#printBtn').addEventListener('click', () => { if (!$('#printBtn').disabled) alert('演示：调用浏览器打印（window.print）'); });
+$('#pdfBtn').addEventListener('click', () => alert('演示：按当前工单渲染 PDF 并下载（P0 功能）'));
+$('#moreBtn').addEventListener('click', () => alert('演示：更多菜单（重启以应用更新 / 关于 / 导出 PDF[手机]）'));
+
+/* ================== 平板：轨道与设置抽屉 ================== */
+$('#trayToggle').addEventListener('click', trayToggleFn);
+$('#trayGrab').addEventListener('click', trayToggleFn);
+function trayToggleFn() {
+  $('#tray').classList.toggle('expanded');
+  const expanded = $('#tray').classList.contains('expanded');
+  document.body.classList.toggle('tray-expanded', expanded);
+  $('#trayToggle').innerHTML = `<svg class="icon"><use href="#i-${expanded ? 'down' : 'up'}"/></svg>`;
+}
+$('#specToggle').addEventListener('click', () => { document.body.classList.toggle('spec-open'); $('#specScrim').classList.toggle('on', document.body.classList.contains('spec-open')); });
+$('#specScrim').addEventListener('click', () => { document.body.classList.remove('spec-open'); $('#specScrim').classList.remove('on'); });
+
+/* ================== 手机：BottomSheet ================== */
+document.querySelectorAll('.bb-tab').forEach((b) => b.addEventListener('click', () => {
+  const isImages = b.dataset.sheet === 'images';
+  $('#sheet-images-view').style.display = isImages ? 'block' : 'none';
+  $('#sheet-settings-view').style.display = isImages ? 'none' : 'block';
+  if (!isImages && !$('#sheetSettingsBody').children.length) {
+    const clone = $('#spec').cloneNode(true);
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+    clone.style.display = 'block';
+    $('#sheetSettingsBody').append(clone);
+    bindSpec(clone);
+  }
+  closeSheet();
+  $('#sheet').classList.add('on');
+  $('#sheetScrim').classList.add('on');
+  b.classList.add('on');
+}));
+$('#sheetScrim').addEventListener('click', closeSheet);
+function closeSheet() {
+  $('#sheet').classList.remove('on');
+  $('#sheetScrim').classList.remove('on');
+  document.querySelectorAll('.bb-tab').forEach((b) => b.classList.remove('on'));
+}
+
+/* ================== 设备形态切换 ================== */
+const NOTES = {
+  desktop: '≥1200：三栏流水线「图片池 → 裁切台 → 工单设置」；底部操作栏 = 工单收尾（读数 + 导出 PDF + 打印）；格子选中后可旋转/替换/删除',
+  tablet: '900–1200：图片池转底部轨道（默认折叠）；设置转右侧覆盖抽屉（滑杆图标开关）；底部操作栏与桌面一致',
+  phone: '<900：全屏裁切台；底部栏打开图片/设置 BottomSheet；操作栏（导出 PDF + 打印）紧贴底部栏，三形态出口位置一致',
+};
+document.querySelectorAll('.mode-switch button').forEach((b) => b.addEventListener('click', () => {
+  document.body.dataset.mode = b.dataset.mode;
+  document.querySelectorAll('.mode-switch button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  $('#modeNote').textContent = NOTES[b.dataset.mode];
+  closeSheet();
+  document.body.classList.remove('spec-open', 'tray-expanded');
+  $('#tray').classList.remove('expanded');
+  $('#trayToggle').innerHTML = '<svg class="icon"><use href="#i-up"/></svg>';
+  $('#specScrim').classList.remove('on');
+  render();
+}));
+$('#modeNote').textContent = NOTES.desktop;
+render();
+</script>
+</body>
+</html>

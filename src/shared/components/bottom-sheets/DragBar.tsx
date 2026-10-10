@@ -1,5 +1,6 @@
-import { Box } from '@mui/material';
-import { type SxProps, styled, type Theme } from '@mui/material/styles';
+import { Box } from '@suid/material';
+import { styled, type Theme } from '@suid/material/styles';
+import { SxProps } from '@suid/system';
 
 const DragIcon = styled('div')(({ theme }) => ({
   width: 30,
@@ -12,7 +13,7 @@ interface BottomSheetsDragBarProps {
   sx?: SxProps<Theme>;
 }
 
-export default function BottomSheetsDragBar({ sx }: BottomSheetsDragBarProps) {
+export default function BottomSheetsDragBar(props: BottomSheetsDragBarProps) {
   return (
     <Box
       sx={[
@@ -22,7 +23,7 @@ export default function BottomSheetsDragBar({ sx }: BottomSheetsDragBarProps) {
           alignItems: 'center',
           height: 32,
         },
-        ...(Array.isArray(sx) ? sx : [sx]),
+        ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
       ]}
     >
       <DragIcon />

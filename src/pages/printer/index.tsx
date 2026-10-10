@@ -2,16 +2,16 @@ import PrintIcon from '@suid/icons-material/Print';
 import { Box, Fab, useMediaQuery, useTheme } from '@suid/material';
 import { createDeferred, createMemo, createSignal, Show } from 'solid-js';
 import AboutDialog from '@/features/about';
-import { InsetsProvider } from '@/features/insets';
-import { createPrinting as usePrint } from '@/features/print';
-import AdjustSheets from '@/pages/printer/components/AdjustSheets';
-import AppBarArea from '@/pages/printer/components/AppBarArea';
-import ImageSheets from '@/pages/printer/components/ImageSheets';
-import MainArea from '@/pages/printer/components/MainArea';
-import SPPrint from '@/pages/printer/components/SPPrint';
-import { ConfigProvider } from '@/pages/printer/contexts/ConfigContext';
-import useImages, { ImagesProvider } from '@/pages/printer/contexts/ImagesContext';
+import { createPrinting } from '@/features/print';
+import { InsetsProvider } from '@/shared/components/insets';
 import { createSheetOpenState } from '@/shared/hooks/createSheetOpenedState';
+import AdjustSheets from './components/AdjustSheets';
+import AppBarArea from './components/AppBarArea';
+import ImageSheets from './components/ImageSheets';
+import MainArea from './components/MainArea';
+import SPPrint from './components/SPPrint';
+import { ConfigProvider } from './contexts/ConfigContext';
+import { ImagesProvider, useImages } from './contexts/ImagesContext';
 
 function PrinterPageContent() {
   const theme = useTheme();
@@ -44,7 +44,7 @@ function PrinterPageContent() {
 
   const fabInsetWidth = 48 + 16;
 
-  const isPrinting = usePrint();
+  const isPrinting = createPrinting();
   function handlePrint() {
     window.print();
   }

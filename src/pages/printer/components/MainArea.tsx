@@ -1,12 +1,12 @@
 import { Box, ThemeProvider, Toolbar, Typography, useTheme } from '@suid/material';
 import { createMemo, Index, Show } from 'solid-js';
-import { useInsets } from '@/features/insets';
 import { getOrientationBasedSize, PrintPreview, PrintPreviewPaper, pageSizeNameToCm } from '@/features/print';
-import SPPrintPageContent from '@/pages/printer/components/SPPrintPageContent';
-import { useConfig } from '@/pages/printer/contexts/ConfigContext';
-import useImages from '@/pages/printer/contexts/ImagesContext';
+import { useInsets } from '@/shared/components/insets';
 import { usePreferredDarkMode } from '@/shared/hooks/usePreferredDarkMode';
 import { createAppTheme } from '@/shared/themes/appTheme';
+import { useConfig } from '../contexts/ConfigContext';
+import { useImages } from '../contexts/ImagesContext';
+import SPPrintPageContent from './SPPrintPageContent';
 
 export default function MainArea() {
   const insets = useInsets();

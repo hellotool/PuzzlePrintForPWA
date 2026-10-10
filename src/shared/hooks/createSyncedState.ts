@@ -1,16 +1,16 @@
 import { type Accessor, createRenderEffect, createSignal, on, type Setter } from 'solid-js';
 
-export interface SyncStateOptions<U, D> {
+export interface SyncedStateOptions<U, D> {
   flowDown: (upstreamValue: U) => D;
   flowUp: (downstreamValue: D) => U;
   canFlowUp?: (downstreamValue: D) => boolean;
   canFlowDown?: (upstreamValue: U) => boolean;
 }
 
-export function syncState<U, D>(
+export function createSyncedState<U, D>(
   upstreamValue: Accessor<U>,
   setUpstreamValue: (value: Accessor<U>) => void,
-  { flowDown, flowUp, canFlowUp = () => true, canFlowDown = () => true }: SyncStateOptions<U, D>,
+  { flowDown, flowUp, canFlowUp = () => true, canFlowDown = () => true }: SyncedStateOptions<U, D>,
 ): [Accessor<D>, Setter<D>] {
   let flowedUpstreamValue: U = upstreamValue();
   let flowedDownstreamValue: D = flowDown(flowedUpstreamValue);

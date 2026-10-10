@@ -1,9 +1,13 @@
 import { makeEventListener } from '@solid-primitives/event-listener';
 import { flatten, type NullableTranslator, type Translator, translator } from '@solid-primitives/i18n';
 import { type Accessor, createContext, createSignal, type JSX, useContext } from 'solid-js';
-import { type GlobalDictionary, type Locale, locales, type RawGlobalDictionary } from '@/locales';
-import en from '@/locales/en';
-import zhCN from '@/locales/zh-CN';
+import type { GlobalDictionary, Locale, RawGlobalDictionary } from '@/locales';
+
+export interface I18nRegistry {
+  available: readonly Locale[];
+  fallback: Locale;
+  dictionaries: Record<Locale, RawGlobalDictionary>;
+}
 
 const GlobalLocaleConfigContext = createContext<{
   locale: Accessor<Locale>;
@@ -46,13 +50,13 @@ export function useGlobalTranslator(): NullableTranslator<GlobalDictionary> {
   return config.translator;
 }
 
-function getAvailableLocales() {
+function matchAvailableLocales(available: readonly Locale[]): Locale[] {
   const availableLocales: Locale[] = [];
   for (const browserLanguage of navigator.languages) {
-    if (browserLanguage in locales) {
+    if (available.includes(browserLanguage as Locale)) {
       availableLocales.push(browserLanguage as Locale);
     } else {
-      const similarLocale = locales.find((locale) => browserLanguage.startsWith(locale));
+      const similarLocale = available.find((locale) => browserLanguage.startsWith(locale));
       if (similarLocale) {
         availableLocales.push(similarLocale);
       }
@@ -61,29 +65,25 @@ function getAvailableLocales() {
   return availableLocales;
 }
 
-export function createCurrentLocale() {
-  const [currentLocale, setCurrentLocale] = createSignal(getAvailableLocales()[0]);
+export function createCurrentLocale(registry: I18nRegistry): Accessor<Locale> {
+  function resolveCurrentLocale(): Locale {
+    return matchAvailableLocales(registry.available)[0] ?? registry.fallback;
+  }
+
+  const [currentLocale, setCurrentLocale] = createSignal<Locale>(resolveCurrentLocale());
   makeEventListener(window, 'languagechange', () => {
-    setCurrentLocale(getAvailableLocales()[0]);
+    setCurrentLocale(resolveCurrentLocale());
   });
   return currentLocale;
 }
 
-export function createGlobalTranslator<T extends string>(currentLocale: Accessor<T>): Translator<GlobalDictionary> {
+export function createGlobalTranslator(
+  registry: I18nRegistry,
+  currentLocale: Accessor<Locale>,
+): Translator<GlobalDictionary> {
   const dictionary = () => {
-    let rawDictionary: RawGlobalDictionary;
-    switch (currentLocale()) {
-      case 'zh-CN':
-        rawDictionary = zhCN;
-        break;
-      case 'en':
-        rawDictionary = en;
-        break;
-      default:
-        rawDictionary = zhCN;
-    }
+    const rawDictionary = registry.dictionaries[currentLocale()] ?? registry.dictionaries[registry.fallback];
     return flatten(rawDictionary);
   };
-  const t = translator(dictionary);
-  return t;
+  return translator(dictionary);
 }

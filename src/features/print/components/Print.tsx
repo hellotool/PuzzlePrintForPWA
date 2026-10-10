@@ -2,9 +2,9 @@ import { GlobalStyles } from '@suid/material';
 import type { DataType } from 'csstype';
 import { createMemo, type JSX, onMount } from 'solid-js';
 import { mergeProps, Portal } from 'solid-js/web';
-import { PrintPaperConfigProvider } from '@/features/print/contexts/PrintPaperConfigContext';
-import { pageSizeNameToCm } from '@/features/print/utils/paperSize';
-import { getOrientationBasedSize } from '@/features/print/utils/print';
+import { PrintPaperConfigProvider } from '../contexts/PrintPaperConfigContext';
+import { pageSizeNameToCm } from '../utils/paperSize';
+import { getOrientationBasedSize } from '../utils/print';
 
 export interface PrintProps {
   children: JSX.Element;
@@ -53,7 +53,7 @@ export default function Print(props: PrintProps) {
           '@page': {
             size: (typeof finalProps.paperSize === 'string'
               ? `${finalProps.paperSize} ${finalProps.paperOrientation}`
-              : // biome-ignore lint/suspicious/noExplicitAny: false
+              : // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 `${finalPaperSize().width}cm ${finalPaperSize().height}cm`) as any,
             margin: `${finalProps.contentMarginTop}cm ${finalProps.contentMarginRight}cm ${finalProps.contentMarginBottom}cm ${finalProps.contentMarginLeft}cm`,
           },

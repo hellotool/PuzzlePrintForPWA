@@ -1,16 +1,32 @@
 import { Meta, MetaProvider, Title } from '@solidjs/meta';
 import { alpha, GlobalStyles, ThemeProvider } from '@suid/material';
 import { createEffect } from 'solid-js';
+import { locales } from '@/locales';
+import en from '@/locales/en';
+import zhCN from '@/locales/zh-CN';
+import PrinterPage from '@/pages/printer';
+import { useDisplayStandaloneMode } from '@/shared/hooks/useDisplayStandaloneMode';
+import {
+  createCurrentLocale,
+  createGlobalTranslator,
+  GlobalLocaleConfigProvider,
+  type I18nRegistry,
+} from '@/shared/i18n';
+import { createAppTheme } from '@/shared/themes/appTheme';
 import {
   makeDisableDefaultContextMenuListener,
   makeDisableDefaultDropListener,
   makeDisableDefaultF5Listener,
   makeMeta,
-} from '@/app/global-effects';
-import PrinterPage from '@/pages/printer';
-import { useDisplayStandaloneMode } from '@/shared/hooks/useDisplayStandaloneMode';
-import { createCurrentLocale, createGlobalTranslator, GlobalLocaleConfigProvider } from '@/shared/i18n';
-import { createAppTheme } from '@/shared/themes/appTheme';
+} from './global-effects';
+
+const DEFAULT_LOCALE = 'zh-CN';
+
+const I18N_REGISTRY: I18nRegistry = {
+  available: locales,
+  fallback: DEFAULT_LOCALE,
+  dictionaries: { en, 'zh-CN': zhCN },
+};
 
 export function App() {
   const theme = createAppTheme();
@@ -31,8 +47,8 @@ export function App() {
     makeMeta('theme-color', () => theme.palette.background.default);
   }
 
-  const currentLocale = createCurrentLocale();
-  const t = createGlobalTranslator(currentLocale);
+  const currentLocale = createCurrentLocale(I18N_REGISTRY);
+  const t = createGlobalTranslator(I18N_REGISTRY, currentLocale);
 
   if (IS_TAURI) {
     createEffect(() => {

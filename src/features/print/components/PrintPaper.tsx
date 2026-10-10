@@ -1,6 +1,6 @@
 import { Box } from '@suid/material';
 import type { JSX } from 'solid-js';
-import { usePrintPaperConfig } from '@/features/print/contexts/PrintPaperConfigContext';
+import { usePrintPaperConfig } from '../contexts/PrintPaperConfigContext';
 
 interface PrintPaperProps {
   children: JSX.Element;

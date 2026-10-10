@@ -1,12 +1,6 @@
 import { createContext, type JSX, onCleanup, useContext } from 'solid-js';
-
-import { useConfig } from '@/pages/printer/contexts/ConfigContext';
-import {
-  createImagesActions,
-  createImagesStore,
-  type ImagesActions,
-  type ImagesStore,
-} from '@/pages/printer/stores/images';
+import { createImagesActions, createImagesStore, type ImagesActions, type ImagesStore } from '../stores/images';
+import { useConfig } from './ConfigContext';
 
 const ImagesContext = createContext<{ state: ImagesStore; actions: ImagesActions }>();
 
@@ -26,7 +20,7 @@ export function ImagesProvider(props: ImagesProviderProps) {
   return <ImagesContext.Provider value={{ state, actions }}>{props.children}</ImagesContext.Provider>;
 }
 
-export default function useImages() {
+export function useImages() {
   const value = useContext(ImagesContext);
   if (!value) {
     throw new Error('useImages must be used within an ImagesProvider');
