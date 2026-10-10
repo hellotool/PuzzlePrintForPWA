@@ -8,9 +8,6 @@
 - 构建工具：[Rsbuild](https://rsbuild.rs/)
 - 桌面壳：[Tauri](https://tauri.app/) 2
 
-架构与目录结构（分层规则、目标结构、迁移清单）见 [软件架构设计](./ARCHITECTURE.md)。
-功能规划（产品原则、优先级、排期）见 [功能规划](./FEATURES.md)。
-
 ## 🛠️ 开发准备
 
 ### 环境配置
@@ -27,7 +24,7 @@
 
 ## ✅ 代码与文档质量
 
-- 检查：`pnpm check`（代码用 Biome，文档用 rumdl）
+- 检查：`pnpm check`（代码用 Rslint + rs fmt，文档用 rumdl）
 - 格式化：`pnpm format`
 
 ## 📄 文档生成
