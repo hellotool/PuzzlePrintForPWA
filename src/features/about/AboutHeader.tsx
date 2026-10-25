@@ -7,6 +7,7 @@ interface AboutHeaderProps {
   version: string;
   sx?: SxProps<Theme>;
 }
+
 export default function AboutHeader(props: AboutHeaderProps) {
   const theme = useTheme();
   return (

@@ -21,7 +21,7 @@ _该应用程序目前仅支持中文_。
 
 </div>
 
-打印多张图片在同一张纸上。
+在同一张纸上打印多张图片。
 
 ![哈兔工具 - 实验性项目](https://img.shields.io/badge/哈兔工具-实验性项目-2196f3)
 [![Apache 2.0 许可证](https://img.shields.io/github/license/hellotool/PuzzlePrintForPWA?label=许可证)](./LICENSE)

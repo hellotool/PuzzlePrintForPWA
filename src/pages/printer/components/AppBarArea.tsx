@@ -34,7 +34,7 @@ export default function AppBarArea(props: AppBarAreaProps) {
   return (
     <AppBar>
       <Toolbar sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <ToolbarTitle>哈兔拼图打印</ToolbarTitle>
+        <ToolbarTitle>拼图打印</ToolbarTitle>
         <ToolbarIconButton
           icon={props.imageSheetsButtonActive ? <PhotoLibraryIcon /> : <PhotoLibraryOutlinedIcon />}
           label={!props.imageSheetsButtonActive ? '打开图片面板' : '关闭图片面板'}

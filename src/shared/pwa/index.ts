@@ -7,8 +7,6 @@ export { isServiceWorkerWaiting };
 
 let workbox: Workbox | undefined;
 
-
-
 export async function registerServiceWorker() {
   const { Workbox } = await import('workbox-window');
   workbox = new Workbox(`${import.meta.env.BASE_URL}/service-worker.js`);

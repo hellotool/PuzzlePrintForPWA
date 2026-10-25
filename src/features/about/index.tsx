@@ -1,7 +1,7 @@
 import type { ModalUnstyledOnClose } from '@suid/base/ModalUnstyled';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Link } from '@suid/material';
 import { For, type JSX } from 'solid-js';
-import { APP_EMAIL, APP_VERSION, URL_APP_LICENSE, URL_REPOSITORY } from '@/shared/app-meta';
+import { APP_EMAIL, APP_VERSION, URL_APP_LICENSE, URL_REPOSITORY } from '@/shared/constants';
 import AboutHeader from './AboutHeader';
 import APP_ICON from './assets/icon.svg';
 

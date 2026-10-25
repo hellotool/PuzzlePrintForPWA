@@ -1,4 +1,5 @@
 # $schema: https://json.schemastore.org/rumdl.json
+#:schema: https://json.schemastore.org/rumdl.json
 
 # https://rumdl.dev/global-settings/
 exclude = ["node_modules", "dist", "src-tauri/target"]
