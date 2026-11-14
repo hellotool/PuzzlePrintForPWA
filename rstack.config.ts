@@ -25,6 +25,30 @@ function getGitReference() {
 }
 
 const GIT_REFERENCE = getGitReference();
+// 临时禁用 PWA：关闭 Service Worker、manifest 与安装入口；恢复时改为 true 并取消 index.html 注释。
+const ENABLE_PWA = false;
+
+const webManifestPlugin: RsbuildPlugin = {
+  name: 'web-manifest-plugin',
+  setup(api) {
+    api.processAssets({ stage: 'additional' }, async ({ sources, compilation }) => {
+      const { default: rawManifest } = await import('./src/app/manifest.json', {
+        with: { type: 'json' },
+      });
+      const manifest: Record<string, unknown> = { ...rawManifest };
+      delete manifest.$schema;
+      const localeManifest = (await import('./scripts/manifest/localized.ts')).default;
+      const mergedManifest = Object.assign(manifest, localeManifest);
+      const source = new sources.RawSource(
+        JSON.stringify(mergedManifest).replaceAll(
+          '<%= process.env.BASE_URL %>',
+          api.getRsbuildConfig('current').output?.assetPrefix ?? '/',
+        ),
+      );
+      compilation.emitAsset('manifest.json', source);
+    });
+  },
+};
 
 define.app({
   plugins: [
@@ -62,7 +86,7 @@ define.app({
     },
     define: {
       IS_TAURI: false,
-      CONFIG_ENABLE_PWA: true,
+      CONFIG_ENABLE_PWA: ENABLE_PWA,
       'import.meta.env.GIT_REFERENCE': JSON.stringify(GIT_REFERENCE),
       'import.meta.env.APP_VERSION': JSON.stringify(process.env.npm_package_version),
     },
@@ -82,40 +106,18 @@ define.app({
       tools: {
         rspack: {
           plugins: [
-            ...(process.env.NODE_ENV === 'development'
-              ? []
-              : [
+            ...(ENABLE_PWA && process.env.NODE_ENV !== 'development'
+              ? [
                   new GenerateSW({
                     cacheId: 'puzzle-print',
                     cleanupOutdatedCaches: true,
                   }),
-                ]),
+                ]
+              : []),
           ],
         },
       },
-      plugins: [
-        {
-          name: 'web-manifest-plugin',
-          setup(api) {
-            api.processAssets({ stage: 'additional' }, async ({ sources, compilation }) => {
-              const { default: rawManifest } = await import('./src/app/manifest.json', {
-                with: { type: 'json' },
-              });
-              const manifest: Record<string, unknown> = { ...rawManifest };
-              delete manifest.$schema;
-              const localeManifest = (await import('./scripts/manifest/localized.ts')).default;
-              const mergedManifest = Object.assign(manifest, localeManifest);
-              const source = new sources.RawSource(
-                JSON.stringify(mergedManifest).replaceAll(
-                  '<%= process.env.BASE_URL %>',
-                  api.getRsbuildConfig('current').output?.assetPrefix ?? '/',
-                ),
-              );
-              compilation.emitAsset('manifest.json', source);
-            });
-          },
-        } satisfies RsbuildPlugin,
-      ],
+      plugins: [...(ENABLE_PWA ? [webManifestPlugin] : [])],
     },
     tauri: {
       output: {
