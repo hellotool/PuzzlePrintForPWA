@@ -14,19 +14,22 @@ export function createAppTheme(options?: AppThemeOptions) {
         return createPalette({
           mode: 'light',
           primary: {
-            main: '#1a73e8', // Google Blue 600
+            main: '#00796b',
           },
           secondary: {
-            main: '#1a73e8', // Google Blue 600
+            main: '#00796b',
+          },
+          background: {
+            default: '#f1f3f4',
           },
         });
       } else {
         return createPalette({
           primary: {
-            main: '#aecbfa', // Google Blue 600
+            main: '#80cbc4',
           },
           secondary: {
-            main: '#aecbfa', // Google Blue 600
+            main: '#80cbc4',
           },
           mode: 'dark',
         });

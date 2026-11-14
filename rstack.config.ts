@@ -137,7 +137,7 @@ define.app({
 define.fmt({
   printWidth: 120,
   singleQuote: true,
-  // markdown 由 rumdl 负责，YAML/TOML 保持现状，不让 Prettier 接管
+  // markdown 由 rumdl、TOML 由 tombi 负责，YAML 保持现状，不让 Prettier 接管
   ignorePatterns: ['**/*.md', '**/*.yml', '**/*.yaml', '**/*.toml'],
 });
 

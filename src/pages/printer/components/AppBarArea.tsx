@@ -1,24 +1,13 @@
 import MoreVertIcon from '@suid/icons-material/MoreVert';
-import PhotoLibraryIcon from '@suid/icons-material/PhotoLibrary';
-import PhotoLibraryOutlinedIcon from '@suid/icons-material/PhotoLibraryOutlined';
-import ViewSidebarIcon from '@suid/icons-material/ViewSidebar';
-import ViewSidebarOutlinedIcon from '@suid/icons-material/ViewSidebarOutlined';
-import { AppBar, Badge, Menu, MenuItem, Toolbar, useTheme } from '@suid/material';
+import { AppBar, Badge, IconButton, Menu, MenuItem, Toolbar, Typography } from '@suid/material';
 import { createSignal, Show } from 'solid-js';
-import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
-import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
 import { getWorkBox, isServiceWorkerWaiting } from '@/shared/pwa';
 
 interface AppBarAreaProps {
-  onToggleAdjustSheets?: () => void;
-  onToggleImageSheets?: () => void;
-  imageSheetsButtonActive?: boolean;
-  adjustSheetsButtonActive?: boolean;
   onAboutClick?: () => void;
 }
-export default function AppBarArea(props: AppBarAreaProps) {
-  const theme = useTheme();
 
+export default function AppBarArea(props: AppBarAreaProps) {
   const [isMoreOptionsOpened, setMoreOptionsOpened] = createSignal(false);
   let moreOptionsRef: HTMLButtonElement | undefined;
 
@@ -27,59 +16,40 @@ export default function AppBarArea(props: AppBarAreaProps) {
     getWorkBox()?.messageSkipWaiting();
   }
 
-  function handleAboutMenuIteClick() {
+  function handleAboutMenuItemClick() {
     setMoreOptionsOpened(false);
     props.onAboutClick?.();
   }
+
   return (
-    <AppBar>
-      <Toolbar sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <ToolbarTitle>拼图打印</ToolbarTitle>
-        <ToolbarIconButton
-          icon={props.imageSheetsButtonActive ? <PhotoLibraryIcon /> : <PhotoLibraryOutlinedIcon />}
-          label={!props.imageSheetsButtonActive ? '打开图片面板' : '关闭图片面板'}
-          onClick={props.onToggleImageSheets}
-          color={props.imageSheetsButtonActive ? 'primary' : undefined}
-        />
-        <ToolbarIconButton
-          icon={props.adjustSheetsButtonActive ? <ViewSidebarIcon /> : <ViewSidebarOutlinedIcon />}
-          label={!props.adjustSheetsButtonActive ? '打开调整面板' : '关闭调整面板'}
-          onClick={props.onToggleAdjustSheets}
-          color={props.adjustSheetsButtonActive ? 'primary' : undefined}
-        />
-        <ToolbarIconButton
+    <AppBar position="static" color="default" elevation={0}>
+      <Toolbar variant="dense" sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Typography variant="h6" noWrap sx={{ fontWeight: 500, mr: 1, flexGrow: 1 }}>
+          拼图打印
+        </Typography>
+        <IconButton
           aria-controls={isMoreOptionsOpened() ? 'more-options-menu' : undefined}
           aria-haspopup="true"
           aria-expanded={isMoreOptionsOpened() ? 'true' : undefined}
-          edge="end"
-          icon={
-            <Badge variant="dot" invisible={!isServiceWorkerWaiting()}>
-              <MoreVertIcon />
-            </Badge>
-          }
-          label={'更多选项'}
+          aria-label="更多选项"
           onClick={() => setMoreOptionsOpened(true)}
           ref={moreOptionsRef}
-        />
+        >
+          <Badge variant="dot" invisible={!isServiceWorkerWaiting()}>
+            <MoreVertIcon />
+          </Badge>
+        </IconButton>
         <Menu
           id="more-options-menu"
           anchorEl={moreOptionsRef}
           open={isMoreOptionsOpened()}
           onClose={() => setMoreOptionsOpened(false)}
-          MenuListProps={{ 'aria-labelledby': 'basic-button' }}
-          PaperProps={{
-            sx: {
-              minWidth: '168px',
-              [theme.breakpoints.up('sm')]: {
-                width: '192px',
-              },
-            },
-          }}
+          PaperProps={{ sx: { minWidth: 168 } }}
         >
           <Show when={isServiceWorkerWaiting()}>
             <MenuItem onClick={handleUpdateMenuItemClick}>重启以应用更新</MenuItem>
           </Show>
-          <MenuItem onClick={handleAboutMenuIteClick}>关于</MenuItem>
+          <MenuItem onClick={handleAboutMenuItemClick}>关于</MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>

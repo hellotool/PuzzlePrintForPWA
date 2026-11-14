@@ -1,186 +1,38 @@
-import AddIcon from '@suid/icons-material/Add';
-import ClearAllOutlinedIcon from '@suid/icons-material/ClearAllOutlined';
-import CloseIcon from '@suid/icons-material/Close';
-import { alpha, Box, Drawer, Fade, Toolbar, Typography, useTheme } from '@suid/material';
-import type { DrawerProps } from '@suid/material/Drawer';
-import { createSignal, For, Show } from 'solid-js';
-import { useInsets } from '@/shared/components/insets';
-import { ToolbarIconButton } from '@/shared/components/toolbar/ToolbarIconButton';
-import ToolbarTitle from '@/shared/components/toolbar/ToolbarTitle';
-import { pickFiles } from '@/shared/utils/file';
-import { mergeMultiSxProps } from '@/shared/utils/suid';
-import { useImages } from '../../contexts/ImagesContext';
-import ImageItem from './ImageItem';
+import { Drawer, useMediaQuery } from '@suid/material';
+import { Show } from 'solid-js';
+import DragBar from '@/shared/ui/suid/DragBar';
+import ImagePanel from '../ImagePanel';
 
-interface ImageSheetsProps extends DrawerProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onClose?: (event: any, reason: 'backdropClick' | 'escapeKeyDown' | 'toolbarClick') => void;
-  showCloseButton?: boolean;
+interface ImageSheetsProps {
+  open: boolean;
+  onClose: () => void;
+  excludedKeys?: string[];
 }
 
 export default function ImageSheets(props: ImageSheetsProps) {
-  const sheetsBleeding = 56;
-  const insets = useInsets();
+  const hasFinePointer = useMediaQuery('(any-pointer: fine)');
+  const hasTouch = useMediaQuery('(any-pointer: coarse)');
 
-  const { state: images, actions: imagesActions } = useImages();
-
-  function handleAddImagesClick() {
-    pickFiles({ accept: 'image/*', multiple: true })
-      .then((files) => {
-        if (files) {
-          imagesActions.addImageFiles(files);
-        }
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-  }
-
-  function handleClearImagesClick() {
-    imagesActions.clearImages();
-  }
-  const theme = useTheme();
-
-  const [dragEntered, setDragEntered] = createSignal(false);
-
-  let isSelfDrag: boolean = false;
-  function handleDragStart(_event: DragEvent) {
-    isSelfDrag = true;
-  }
-
-  function handleDragEnd(_event: DragEvent) {
-    isSelfDrag = false;
-  }
-
-  function handleDragEnter(event: DragEvent) {
-    if (!isSelfDrag && event.dataTransfer?.types.includes('Files')) {
-      setDragEntered(true);
-    }
-  }
-
-  function handleDragOver(event: DragEvent) {
-    if (!isSelfDrag && event.dataTransfer) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = event.dataTransfer.types.includes('Files') ? 'copy' : 'none';
-    }
-  }
-  function handleDragLeave(_event: DragEvent) {
-    setDragEntered(false);
-  }
-  function handleDrop(event: DragEvent) {
-    event.preventDefault();
-    setDragEntered(false);
-    if (event.dataTransfer?.files) {
-      imagesActions.addImageFiles(event.dataTransfer.files);
-    }
-  }
   return (
     <Drawer
       anchor="bottom"
-      {...props}
+      open={props.open}
+      variant="temporary"
+      onClose={props.onClose}
       PaperProps={{
-        ...props.PaperProps,
-        sx: mergeMultiSxProps(
-          {
-            zIndex: 0,
-            left: `${insets.left}px`,
-            right: `${insets.right}px`,
-            transition: theme.transitions.create(['left', 'right', 'bottom'], {
-              duration: theme.transitions.duration.standard,
-              easing: theme.transitions.easing.easeInOut,
-            }),
-            transitionProperty: 'left, right, bottom, transform !important',
-          },
-          props.PaperProps?.sx,
-        ),
+        sx: {
+          height: '82vh',
+          maxHeight: 560,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          overflow: 'hidden',
+        },
       }}
     >
-      <Toolbar>
-        <Show when={props.showCloseButton}>
-          <ToolbarIconButton
-            icon={<CloseIcon />}
-            label="关闭图片面板"
-            onClick={() => props.onClose?.({}, 'toolbarClick')}
-            edge="start"
-            sx={{ mr: 2 }}
-          />
-        </Show>
-
-        <ToolbarTitle>图片（{images.images.length} 张）</ToolbarTitle>
-        <ToolbarIconButton
-          disabled={images.images.length === 0}
-          icon={<ClearAllOutlinedIcon />}
-          label={'移除所有图片'}
-          onClick={handleClearImagesClick}
-        />
-        <ToolbarIconButton edge="end" icon={<AddIcon />} label={'添加图片'} onClick={handleAddImagesClick} />
-      </Toolbar>
-
-      <Box
-        sx={{
-          position: 'relative',
-          height: '100%',
-          width: '100%',
-        }}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            right: 0,
-            bottom: 0,
-            display: 'grid',
-            alignContent: 'start',
-            width: '100%',
-            gap: 1,
-            padding: 1,
-            paddingBottom: `calc(${insets.bottom}px + ${theme.spacing(1)})`,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-            [theme.breakpoints.up('sm')]: {
-              gridTemplateColumns: 'repeat(auto-fill, 90px)',
-            },
-          }}
-        >
-          <For each={images.images}>
-            {(image) => (
-              <ImageItem
-                sx={{
-                  width: '100%',
-                }}
-                image={image}
-              />
-            )}
-          </For>
-        </Box>
-        <Fade in={dragEntered()}>
-          <Box
-            sx={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.hoverOpacity),
-            }}
-            onDragLeave={handleDragLeave}
-          >
-            <Typography variant="body1" color="primary">
-              拖到此处添加图片
-            </Typography>
-          </Box>
-        </Fade>
-      </Box>
+      <Show when={hasTouch()}>
+        <DragBar />
+      </Show>
+      <ImagePanel onClose={props.onClose} showCloseButton={hasFinePointer()} excludedKeys={props.excludedKeys} />
     </Drawer>
   );
 }

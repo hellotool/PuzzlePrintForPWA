@@ -34,6 +34,11 @@
 - 详情请参考 `rumdl.toml`；
 - 其他情况以 [rumdl](https://rumdl.dev/) 为准。
 
+**TOML（`.toml`）：**
+
+- 由 [tombi](https://tombi-toml.github.io/tombi/) 格式化与检查；
+- 规则使用 tombi 默认值。
+
 代码格式与 lint 规则详情请参考 `rstack.config.ts`（提交前跑 `pnpm check`）。
 
 ## 文档规范

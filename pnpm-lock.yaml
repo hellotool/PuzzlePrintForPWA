@@ -208,6 +208,9 @@ importers:
       nanoid:
         specifier: ^6.0.1
         version: 6.0.1
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
       solid-js:
         specifier: ^1.9.15
         version: 1.9.15
@@ -266,6 +269,9 @@ importers:
       rumdl:
         specifier: ^0.3.0
         version: 0.3.0
+      tombi:
+        specifier: ^1.11.1
+        version: 1.11.1
       tsx:
         specifier: ^4.19.4
         version: 4.19.4
@@ -1408,6 +1414,12 @@ packages:
     resolution: {integrity: sha512-7FNeNl8NCE7aINx7WXiKQrPYZWC/hvrTsmk6zmxbI7LTXE7hVek/n8AfVgpe2y82zl3w0HvCHN0bVKMBoJcC0w==}
     engines: {node: '>= 10.0.0'}
 
+  '@pdf-lib/standard-fonts@1.0.0':
+    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
+
+  '@pdf-lib/upng@1.0.1':
+    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
+
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
@@ -2389,6 +2401,64 @@ packages:
     resolution: {integrity: sha512-YbeJ6tctNoo40purO4u3Eeo3RVqmsjJr0NoKQRu+4pvO4gMLzkjta7x0k96SxSLmx+rQ+8um1ThOlw+HLpgFug==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tombi-toml/cli-darwin-arm64@1.11.1':
+    resolution: {integrity: sha512-jcCbXbD7HD7NDUvepOWH26oO+OB38fzRwdcv9WrzxSzJjQsfUZB8r8nzlskBtDw4ynJAblxnZBXREn4w1wU+yw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@tombi-toml/cli-darwin-x64@1.11.1':
+    resolution: {integrity: sha512-IXajaeG4nRDbl0Pgvc1hgZA/yshQj+bO07S8jlil9LLWaG5HL7ONH0cEXzSJLDgkYmTQV+BTxAdbmnUl0gR2qQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@tombi-toml/cli-linux-arm64-musl@1.11.1':
+    resolution: {integrity: sha512-rKwLNEjTnkf5VxEGSar/VthkZx25Zwj1W0ZJoHS3oShybPdNKOEOUnO+ZCy7s6azT78xwOrD8tl+sPiGgWv07A==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@tombi-toml/cli-linux-arm64@1.11.1':
+    resolution: {integrity: sha512-fD1I6xBT5TLYK/KCIfL3RdmtQvlUSJpiA/WueUu60r5sX6xksSq5IqlITYyPhyoUl44bAkdexS1xyCNk/oJIEw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@tombi-toml/cli-linux-x64-musl@1.11.1':
+    resolution: {integrity: sha512-IRYq7ISWr27PALvlJSk23VWjRzuBEcANIgsIsFYbPSOBk0EDkkXhX8uXoxUcrsOlCN2GyhhIvooQBnPtT6M7wA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@tombi-toml/cli-linux-x64@1.11.1':
+    resolution: {integrity: sha512-cZrH2G50hXVU/4Sy4RmpGCpKVStBODXA5SAEW4xLlipkN6ybNybmnrJXNvWAjoI1OanyRXW3shjQwhFKoVHzeA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@tombi-toml/cli-sunos-x64@1.11.1':
+    resolution: {integrity: sha512-82U5APJorab0pz4hkh9o7ZQ/UIAS2pINsrG1pVEQtpJdcPQ/oPJDmAmahQPuzBhaje+fuE2UsPPY/i9wbWnFaQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [sunos]
+
+  '@tombi-toml/cli-win32-arm64@1.11.1':
+    resolution: {integrity: sha512-KB2+XS6ClijwLsi6fgjsG8m2FNpIvBTQvS2G/fbZtMVzJrtz0BOplgTApKw7y0D90yVZh1BUAJJn+qhbecwZHw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@tombi-toml/cli-win32-x64@1.11.1':
+    resolution: {integrity: sha512-EU9gOiHFCG7pZMaUlq1m3vdItCyB5Toawm6e/jKxO9CDC1Ev51W4uhJclENXwDProkZzofdOjF49I3C37l2fnw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [win32]
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     resolution: {integrity: sha512-/67zpWDBLV+oYAEL682s1ktXL0HgqX76f6gaVGkGnVZlBbm1zd0v4Bz8MFF2GGhoX9rvfq3KSQHubFHwa6w6/Q==}
@@ -3526,6 +3596,9 @@ packages:
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
+  pako@1.0.11:
+    resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
+
   parse5@7.3.0:
     resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
 
@@ -3550,6 +3623,9 @@ packages:
 
   pathe@1.1.2:
     resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
+
+  pdf-lib@1.17.1:
+    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -4022,6 +4098,11 @@ packages:
     resolution: {integrity: sha512-jBrmx4lYmaC9k/mgPbylxs7kBUxHtD8256up+HjLaDFfXScKJQyil+SWXSvhAtT7XHo+yTVlpB81PGmHP8oLSQ==}
     engines: {node: ^20.0.0 || >=22.0.0}
 
+  tombi@1.11.1:
+    resolution: {integrity: sha512-rlltptMMuN2NbNdu4aGrgJTd1nmtDrqd6FzTJqV2/k3PR6kYYs+LvXKw4r3Tapx1STXYmLlDRB383Wq9mWwI9w==}
+    engines: {node: '>=14.0.0'}
+    hasBin: true
+
   tr46@1.0.1:
     resolution: {integrity: sha512-dTpowEjclQ7Kgx5SdBkqRzVhERQXov8/l9Ft9dVM9fmg0W0KQSVaXX9T4i6twCPNtYiZM53lpSSUAwJbFPOHxA==}
 
@@ -4034,6 +4115,9 @@ packages:
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
+
+  tslib@1.14.1:
+    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -5497,6 +5581,14 @@ snapshots:
       '@parcel/watcher-win32-x64': 2.6.0
     optional: true
 
+  '@pdf-lib/standard-fonts@1.0.0':
+    dependencies:
+      pako: 1.0.11
+
+  '@pdf-lib/upng@1.0.1':
+    dependencies:
+      pako: 1.0.11
+
   '@popperjs/core@2.11.8': {}
 
   '@rollup/plugin-babel@6.1.0(@babel/core@7.26.10(supports-color@8.1.1))(@types/babel__core@7.20.5)(rollup@4.63.5)(supports-color@8.1.1)':
@@ -6218,6 +6310,33 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.11.5
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.5
       '@tauri-apps/cli-win32-x64-msvc': 2.11.5
+
+  '@tombi-toml/cli-darwin-arm64@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-darwin-x64@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-linux-arm64-musl@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-linux-arm64@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-linux-x64-musl@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-linux-x64@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-sunos-x64@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-win32-arm64@1.11.1':
+    optional: true
+
+  '@tombi-toml/cli-win32-x64@1.11.1':
+    optional: true
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     dependencies:
@@ -7402,6 +7521,8 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
+  pako@1.0.11: {}
+
   parse5@7.3.0:
     dependencies:
       entities: 6.0.0
@@ -7420,6 +7541,13 @@ snapshots:
       minipass: 7.1.3
 
   pathe@1.1.2: {}
+
+  pdf-lib@1.17.1:
+    dependencies:
+      '@pdf-lib/standard-fonts': 1.0.0
+      '@pdf-lib/upng': 1.0.1
+      pako: 1.0.11
+      tslib: 1.14.1
 
   picocolors@1.1.1: {}
 
@@ -7966,6 +8094,18 @@ snapshots:
 
   tinypool@2.2.0: {}
 
+  tombi@1.11.1:
+    optionalDependencies:
+      '@tombi-toml/cli-darwin-arm64': 1.11.1
+      '@tombi-toml/cli-darwin-x64': 1.11.1
+      '@tombi-toml/cli-linux-arm64': 1.11.1
+      '@tombi-toml/cli-linux-arm64-musl': 1.11.1
+      '@tombi-toml/cli-linux-x64': 1.11.1
+      '@tombi-toml/cli-linux-x64-musl': 1.11.1
+      '@tombi-toml/cli-sunos-x64': 1.11.1
+      '@tombi-toml/cli-win32-arm64': 1.11.1
+      '@tombi-toml/cli-win32-x64': 1.11.1
+
   tr46@1.0.1:
     dependencies:
       punycode: 2.3.1
@@ -7975,6 +8115,8 @@ snapshots:
   ts-api-utils@2.5.0(typescript@7.0.2):
     dependencies:
       typescript: 7.0.2
+
+  tslib@1.14.1: {}
 
   tslib@2.8.1: {}
 

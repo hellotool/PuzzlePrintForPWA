@@ -57,7 +57,7 @@ export default function AboutDialog(props: AboutDialogProps) {
             marginLeft: 7,
           }}
         >
-          <Box component="p">将多个转账记录图、电商订单图等以凭证样式打印到纸中。</Box>
+          <Box component="p">将多张图片以拼图样式打印到纸中。</Box>
           <Box
             component="p"
             sx={{

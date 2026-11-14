@@ -6,8 +6,11 @@ export interface ConfigStore {
   print: PrintConfig;
   preview: PreviewConfig;
 }
-export function createConfigStore() {
-  return createStore<ConfigStore>({
+
+export const CONFIG_STORAGE_KEY = 'puzzle-print:config';
+
+function createDefaultConfig(): ConfigStore {
+  return {
     layout: {
       columns: 3,
       rows: 1,
@@ -25,7 +28,28 @@ export function createConfigStore() {
       colorMode: 'gray',
       lightMode: false,
     },
-  });
+  };
+}
+
+function loadStoredConfig(): ConfigStore {
+  const defaults = createDefaultConfig();
+  if (typeof sessionStorage === 'undefined') return defaults;
+  try {
+    const raw = sessionStorage.getItem(CONFIG_STORAGE_KEY);
+    if (!raw) return defaults;
+    const stored = JSON.parse(raw) as Partial<ConfigStore>;
+    return {
+      layout: { ...defaults.layout, ...stored.layout },
+      print: { ...defaults.print, ...stored.print },
+      preview: { ...defaults.preview, ...stored.preview },
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+export function createConfigStore() {
+  return createStore<ConfigStore>(loadStoredConfig());
 }
 
 export interface ConfigActions {

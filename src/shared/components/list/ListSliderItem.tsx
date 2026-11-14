@@ -1,6 +1,8 @@
-import { Box, ListItem, type Theme } from '@suid/material';
+import { Box, ListItem } from '@suid/material';
 import type { SxProps } from '@suid/system';
-import { useEffect, useState } from 'react';
+import type { Theme } from '@suid/material/styles';
+import { createEffect, createSignal, on } from 'solid-js';
+import Slider, { type SliderProps } from '@/shared/ui/suid/Slider';
 import ListItemTitledComponent from './ListItemTitledComponent';
 
 interface ListSliderItemProps<Value extends number | number[]> {
@@ -8,61 +10,52 @@ interface ListSliderItemProps<Value extends number | number[]> {
   sx?: SxProps<Theme>;
   disabled?: boolean;
   value?: Value;
-  onChange?: (event: Event | React.SyntheticEvent, value: Value, activeThumb: number) => void;
+  onChange?: (event: Event, value: Value, activeThumb: number) => void;
   commitTiming?: 'immediately' | 'releasing';
-  sliderProps?: Omit<SliderOwnProps<Value>, 'value' | 'onChange' | 'onChangeCommitted'>;
+  sliderProps?: Omit<SliderProps, 'value' | 'onChange' | 'onChangeCommitted'>;
 }
 
-export default function ListSliderItem<Value extends number | number[]>({
-  title,
-  sx,
-  disabled,
-  value: outsideValue,
-  onChange,
-  commitTiming = 'releasing',
-  sliderProps,
-}: ListSliderItemProps<Value>) {
-  const [value, setValue] = useState<Value>(outsideValue as Value);
-  useEffect(() => {
-    if (typeof outsideValue !== 'undefined') {
-      setValue(outsideValue);
-    }
-  }, [outsideValue]);
+export default function ListSliderItem<Value extends number | number[]>(props: ListSliderItemProps<Value>) {
+  const [value, setValue] = createSignal<Value>((props.value ?? 0) as Value);
 
-  function handleChange(event: Event, value: Value, activeThumb: number) {
-    setValue((prev) => {
-      if (typeof prev === 'number') {
-        return value as Value;
-      }
-      return prev.map((v, i) => (i === activeThumb ? prev[i] : v)) as Value;
-    });
-    if (commitTiming === 'immediately' && onChange) {
-      onChange(event, value, activeThumb);
+  createEffect(
+    on(
+      () => props.value,
+      (nextValue) => {
+        if (nextValue !== undefined) {
+          setValue(() => nextValue as Value);
+        }
+      },
+      { defer: true },
+    ),
+  );
+
+  function handleChange(event: Event, nextValue: number | number[], activeThumb: number) {
+    setValue(() => nextValue as Value);
+    if (props.commitTiming === 'immediately') {
+      props.onChange?.(event, nextValue as Value, activeThumb);
     }
   }
 
-  function handleChangeCommitted(event: React.SyntheticEvent | Event, value: Value) {
-    if (commitTiming === 'releasing' && onChange) {
-      onChange(event, value, 0);
+  function handleChangeCommitted(event: Event, nextValue: number | number[]) {
+    if (props.commitTiming === 'releasing') {
+      props.onChange?.(event, nextValue as Value, 0);
     }
   }
 
-  const TypedSlider = Slider as SliderComponent<Value>;
   return (
-    <ListItem sx={sx}>
-      <ListItemTitledComponent title={title}>
+    <ListItem sx={props.sx}>
+      <ListItemTitledComponent title={props.title}>
         <Box sx={{ paddingInline: 1 }}>
-          <TypedSlider
-            aria-label={title}
-            disabled={disabled}
+          <Slider
+            {...props.sliderProps}
+            aria-label={props.title}
+            disabled={props.disabled}
+            value={value()}
             onChange={handleChange}
             onChangeCommitted={handleChangeCommitted}
-            sx={{
-              display: 'block',
-            }}
-            value={value}
+            sx={{ display: 'block' }}
             valueLabelDisplay="auto"
-            {...sliderProps}
           />
         </Box>
       </ListItemTitledComponent>

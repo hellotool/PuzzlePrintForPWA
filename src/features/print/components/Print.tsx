@@ -36,8 +36,7 @@ export default function Print(props: PrintProps) {
 
   const contentAspectRatio = createMemo(() => {
     const contentWidth = finalPaperSize().width - finalProps.contentMarginLeft - finalProps.contentMarginRight;
-    // 使高度渐少1mm，防止高度高出浏览器指定页面的高度
-    const contentHeight = finalPaperSize().height - finalProps.contentMarginTop - finalProps.contentMarginBottom - 0.1;
+    const contentHeight = finalPaperSize().height - finalProps.contentMarginTop - finalProps.contentMarginBottom;
     return contentWidth / contentHeight;
   });
   let printPortal: HTMLDivElement | undefined;

@@ -1,29 +1,34 @@
 import { Index } from 'solid-js';
+import type { PrintDocument, PrintImageAssets } from '@/domain/print';
 import { Print, PrintPaper } from '@/features/print';
-import { useConfig } from '../contexts/ConfigContext';
-import { useImages } from '../contexts/ImagesContext';
-import SnapProofPageContent from './SPPrintPageContent';
+import PageItems from '@/features/print/components/PageItems';
 
-export default function SPPrint() {
-  const { state: config } = useConfig();
-  const { state: images } = useImages();
+interface SPPrintProps {
+  document: PrintDocument;
+  assets: PrintImageAssets;
+}
+
+export default function SPPrint(props: SPPrintProps) {
+  const orientation = () => (props.document.paper.width >= props.document.paper.height ? 'landscape' : 'portrait');
+
   return (
     <Print
-      paperOrientation={config.print.orientation}
-      paperSize={config.print.size}
-      contentMarginLeft={config.print.contentMarginLeft}
-      contentMarginTop={config.print.contentMarginTop}
-      contentMarginRight={config.print.contentMarginRight}
-      contentMarginBottom={config.print.contentMarginBottom}
+      paperOrientation={orientation()}
+      paperSize={[props.document.paper.width, props.document.paper.height]}
+      contentMarginLeft={props.document.margins.left}
+      contentMarginTop={props.document.margins.top}
+      contentMarginRight={props.document.margins.right}
+      contentMarginBottom={props.document.margins.bottom}
     >
-      <Index each={images.chunkedImages}>
-        {(images) => (
+      <Index each={props.document.pages}>
+        {(page) => (
           <PrintPaper>
-            <SnapProofPageContent
-              images={images()}
-              columns={config.layout.columns}
-              rows={config.layout.rows}
+            <PageItems
+              page={page()}
+              content={{ width: props.document.contentRect.width, height: props.document.contentRect.height }}
+              assets={props.assets}
               mode="print"
+              selectedIds={[]}
             />
           </PrintPaper>
         )}

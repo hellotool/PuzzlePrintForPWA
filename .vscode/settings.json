@@ -24,8 +24,15 @@
     "editor.defaultFormatter": "rstack.rstack"
   },
   "[markdown]": {
-    "editor.defaultFormatter": "rvben.rumdl",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "rvben.rumdl"
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tombi-toml.tombi"
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.rslint": "always",
+    "source.fixAll.rumdl": "always"
   },
   "rumdl.enable": true,
   "rumdl.configPath": "rumdl.toml",
@@ -36,8 +43,5 @@
     "*": "${basename}.*.${extname}"
   },
   "i18n-ally.localesPaths": ["src/locales"],
-  "cSpell.words": ["aaroon", "icns", "nsis", "rsbuild", "rspack", "rstack", "solidjs", "tauri"],
-  "editor.codeActionsOnSave": {
-    "source.fixAll.rslint": "explicit"
-  }
+  "cSpell.words": ["aaroon", "icns", "nsis", "rsbuild", "rspack", "rstack", "solidjs", "tauri", "tombi"]
 }

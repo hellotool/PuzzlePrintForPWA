@@ -24,7 +24,7 @@
 
 ## ✅ 代码与文档质量
 
-- 检查：`pnpm check`（代码用 Rslint + rs fmt，文档用 rumdl）
+- 检查：`pnpm check`（代码用 Rslint + rs fmt，文档用 rumdl，TOML 用 tombi）
 - 格式化：`pnpm format`
 
 ## 📄 文档生成

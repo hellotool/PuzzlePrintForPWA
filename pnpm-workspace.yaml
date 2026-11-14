@@ -4,6 +4,16 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - '@types/node@24.19.0'
+  - '@tombi-toml/cli-darwin-arm64@1.11.1'
+  - '@tombi-toml/cli-darwin-x64@1.11.1'
+  - '@tombi-toml/cli-linux-arm64-musl@1.11.1'
+  - '@tombi-toml/cli-linux-arm64@1.11.1'
+  - '@tombi-toml/cli-linux-x64-musl@1.11.1'
+  - '@tombi-toml/cli-linux-x64@1.11.1'
+  - '@tombi-toml/cli-sunos-x64@1.11.1'
+  - '@tombi-toml/cli-win32-arm64@1.11.1'
+  - '@tombi-toml/cli-win32-x64@1.11.1'
+  - tombi@1.11.1
 
 patchedDependencies:
   '@suid/styled-engine': patches/@suid__styled-engine.patch

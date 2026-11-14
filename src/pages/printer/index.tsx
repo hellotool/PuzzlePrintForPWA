@@ -1,121 +1,214 @@
-import PrintIcon from '@suid/icons-material/Print';
-import { Box, Fab, useMediaQuery, useTheme } from '@suid/material';
-import { createDeferred, createMemo, createSignal, Show } from 'solid-js';
+import { Box, useMediaQuery, useTheme } from '@suid/material';
+import { createEffect, createMemo, createSignal, Show } from 'solid-js';
+import type { PrintImageAssets } from '@/domain/print';
+import { buildGridDocument, removeItemsFromDocument, rotateItems } from '@/domain/print';
 import AboutDialog from '@/features/about';
 import { createPrinting } from '@/features/print';
-import { InsetsProvider } from '@/shared/components/insets';
-import { createSheetOpenState } from '@/shared/hooks/createSheetOpenedState';
+import { createPrintDocumentStore } from '@/features/print/editor/stores/createPrintDocumentStore';
+import { exportPrintDocumentPdf } from '@/features/print/export/exportPdf';
+import { pickFiles } from '@/shared/utils/file';
+import ActionBar from './components/ActionBar';
 import AdjustSheets from './components/AdjustSheets';
 import AppBarArea from './components/AppBarArea';
+import ImagePanel from './components/ImagePanel';
 import ImageSheets from './components/ImageSheets';
 import MainArea from './components/MainArea';
+import FloatingSelectionBar from './components/FloatingSelectionBar';
+import SettingsPanel from './components/SettingsPanel';
 import SPPrint from './components/SPPrint';
-import { ConfigProvider } from './contexts/ConfigContext';
+import { ConfigProvider, useConfig } from './contexts/ConfigContext';
 import { ImagesProvider, useImages } from './contexts/ImagesContext';
 
 function PrinterPageContent() {
   const theme = useTheme();
-  const isSmAndUp = createDeferred(useMediaQuery(theme.breakpoints.up('sm')));
-  const isMdAndUp = createDeferred(useMediaQuery(theme.breakpoints.up('md')));
-  const isHeight600AndUp = createDeferred(useMediaQuery('(min-height: 600px)'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const { state: images, actions: imagesActions } = useImages();
+  const { state: config } = useConfig();
 
-  const isAdjustSheetsPersistent = isMdAndUp;
-  const isImageSheetsPersistent = isHeight600AndUp;
-
-  const [isAdjustSheetsOpened, setAdjustSheetsOpened] = createSheetOpenState(isAdjustSheetsPersistent);
-  const [isImageSheetsOpened, setImageSheetsOpened] = createSheetOpenState(isImageSheetsPersistent);
-
-  function toggleAdjustSheets() {
-    setAdjustSheetsOpened((prev) => !prev);
-  }
-  function toggleImageSheets() {
-    setImageSheetsOpened((prev) => !prev);
-  }
-
-  const adjustSheetsWidth = 320;
-  const imagesSheetsHeight = 320;
-
-  const adjustSheetsInsetWidth = createMemo(() =>
-    isAdjustSheetsPersistent() && isAdjustSheetsOpened() ? adjustSheetsWidth : 0,
-  );
-  const imagesSheetsInsetWidth = createMemo(() =>
-    isImageSheetsPersistent() && isImageSheetsOpened() ? imagesSheetsHeight : 0,
-  );
-
-  const fabInsetWidth = 48 + 16;
+  const [isImageSheetOpened, setImageSheetOpened] = createSignal(false);
+  const [isSettingsSheetOpened, setSettingsSheetOpened] = createSignal(false);
+  const [isAboutDialogOpened, setAboutDialogOpened] = createSignal(false);
+  const [isExporting, setExporting] = createSignal(false);
+  const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
+  const [isDragging, setDragging] = createSignal(false);
 
   const isPrinting = createPrinting();
+
+  const documentSource = createMemo(() =>
+    buildGridDocument({
+      paperSize: config.print.size,
+      orientation: config.print.orientation,
+      margins: {
+        top: config.print.contentMarginTop,
+        right: config.print.contentMarginRight,
+        bottom: config.print.contentMarginBottom,
+        left: config.print.contentMarginLeft,
+      },
+      columns: config.layout.columns,
+      rows: config.layout.rows,
+      images: images.images.map((image) => ({ key: image.key })),
+    }),
+  );
+  const documentStore = createPrintDocumentStore(documentSource);
+  const assets = createMemo<PrintImageAssets>(() => {
+    return Object.fromEntries(
+      images.images.map((image) => [image.key, { url: image.url, name: image.name }]),
+    ) as PrintImageAssets;
+  });
+
+  createEffect(() => {
+    const ids = selectedIds();
+    if (ids.length === 0) return;
+    const existing = new Set(documentStore.document().pages.flatMap((page) => page.items.map((item) => item.id)));
+    const next = ids.filter((id) => existing.has(id));
+    if (next.length !== ids.length) {
+      setSelectedIds(next);
+    }
+  });
+
+  function openImageSheet() {
+    setSettingsSheetOpened(false);
+    setImageSheetOpened(true);
+  }
+
+  function openSettingsSheet() {
+    setImageSheetOpened(false);
+    setSettingsSheetOpened(true);
+  }
+
+  function handleAddImages() {
+    pickFiles({ accept: 'image/*', multiple: true })
+      .then((files) => {
+        if (files) {
+          imagesActions.addImageFiles(files);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+
+  function rotateSelected(delta: number) {
+    if (selectedIds().length === 0) return;
+    documentStore.beginTransaction();
+    documentStore.update(rotateItems(documentStore.document(), selectedIds(), delta));
+    documentStore.commitTransaction();
+  }
+
+  function removeSelected() {
+    if (selectedIds().length === 0) return;
+    documentStore.beginTransaction();
+    documentStore.update(removeItemsFromDocument(documentStore.document(), selectedIds()));
+    documentStore.commitTransaction();
+    setSelectedIds([]);
+  }
+
   function handlePrint() {
     window.print();
   }
 
-  const { state: images } = useImages();
+  async function handleExportPdf() {
+    if (isExporting()) return;
+    setExporting(true);
+    try {
+      await exportPrintDocumentPdf(documentStore.document(), assets());
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setExporting(false);
+    }
+  }
 
-  const [isAboutDialogOpened, setAboutDialogOpened] = createSignal(false);
   return (
-    <Box
-      class="printer-page"
-      sx={{
-        height: '100%',
-      }}
-    >
-      <AppBarArea
-        imageSheetsButtonActive={isImageSheetsOpened() && isImageSheetsPersistent()}
-        adjustSheetsButtonActive={isAdjustSheetsOpened() && isAdjustSheetsPersistent()}
-        onToggleAdjustSheets={toggleAdjustSheets}
-        onToggleImageSheets={toggleImageSheets}
-        onAboutClick={() => setAboutDialogOpened(true)}
-      />
-      <InsetsProvider right={adjustSheetsInsetWidth()} bottom={imagesSheetsInsetWidth()}>
-        <MainArea />
-      </InsetsProvider>
-      <InsetsProvider
-        right={isImageSheetsPersistent() ? adjustSheetsInsetWidth() : undefined}
-        bottom={isImageSheetsPersistent() && adjustSheetsInsetWidth() <= 0 ? fabInsetWidth : undefined}
-      >
-        <ImageSheets
-          onClose={() => setImageSheetsOpened(false)}
-          // onOpen={() => setImageSheetsOpened(true)}
-          open={isImageSheetsOpened()}
-          variant={isImageSheetsPersistent() ? 'persistent' : 'temporary'}
-          showCloseButton={!isImageSheetsPersistent()}
-          PaperProps={{
-            sx: {
-              height: isImageSheetsPersistent() ? `${imagesSheetsHeight}px` : '100%',
-            },
-          }}
-        />
-      </InsetsProvider>
-      <InsetsProvider bottom={isAdjustSheetsPersistent() ? fabInsetWidth : undefined}>
-        <AdjustSheets
-          onClose={() => setAdjustSheetsOpened(false)}
-          // onOpen={() => setAdjustSheetsOpened(true)}
-          open={isAdjustSheetsOpened()}
-          variant={isAdjustSheetsPersistent() ? 'persistent' : 'temporary'}
-          PaperProps={{
-            sx: {
-              width: isSmAndUp() ? adjustSheetsWidth : '100%',
-              maxWidth: 'calc(100% - 56px)',
-              zIndex: isAdjustSheetsPersistent() ? 0 : undefined,
-            },
-          }}
-        />
-      </InsetsProvider>
-      <Fab
-        disabled={images.images.length === 0}
-        onClick={handlePrint}
+    <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <AppBarArea onAboutClick={() => setAboutDialogOpened(true)} />
+      <Box
         sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
+          flexGrow: 1,
+          minHeight: 0,
+          position: 'relative',
+          display: 'grid',
+          gridTemplateColumns: isDesktop() ? '252px minmax(0, 1fr) 292px' : 'minmax(0, 1fr)',
+          overflow: 'hidden',
         }}
-        variant="extended"
       >
-        <PrintIcon sx={{ mr: 1 }} />
-        打印
-      </Fab>
+        <Show when={isDesktop()}>
+          <Box
+            sx={{
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRight: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <ImagePanel excludedKeys={documentStore.document().excludedImageKeys} />
+          </Box>
+        </Show>
+        <MainArea
+          document={documentStore.document()}
+          assets={assets()}
+          colorMode={config.preview.colorMode}
+          lightMode={config.preview.lightMode}
+          selectedIds={selectedIds()}
+          onSelectionChange={setSelectedIds}
+          onUpdateDocument={documentStore.update}
+          onBeginTransaction={documentStore.beginTransaction}
+          onCommitTransaction={documentStore.commitTransaction}
+          onCancelTransaction={documentStore.cancelTransaction}
+          onUndo={documentStore.undo}
+          onRedo={documentStore.redo}
+          onAddImages={handleAddImages}
+          onDragStateChange={setDragging}
+        />
+        <Show when={isDesktop()}>
+          <Box
+            sx={{
+              minHeight: 0,
+              borderLeft: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              overflow: 'hidden',
+            }}
+          >
+            <SettingsPanel />
+          </Box>
+        </Show>
+        <Show when={selectedIds().length > 0 && !isDragging()}>
+          <FloatingSelectionBar
+            selectedIds={selectedIds()}
+            document={documentStore.document()}
+            selectedCount={selectedIds().length}
+            onRotateLeft={() => rotateSelected(-90)}
+            onRotateRight={() => rotateSelected(90)}
+            onRemove={removeSelected}
+          />
+        </Show>
+      </Box>
+      <ActionBar
+        canPrint={images.images.length > 0}
+        canUndo={documentStore.canUndo()}
+        canRedo={documentStore.canRedo()}
+        isExporting={isExporting()}
+        showPanelButtons={!isDesktop()}
+        onPrint={handlePrint}
+        onExportPdf={handleExportPdf}
+        onUndo={documentStore.undo}
+        onRedo={documentStore.redo}
+        onOpenImages={openImageSheet}
+        onOpenSettings={openSettingsSheet}
+      />
+      <Show when={!isDesktop()}>
+        <ImageSheets
+          open={isImageSheetOpened()}
+          onClose={() => setImageSheetOpened(false)}
+          excludedKeys={documentStore.document().excludedImageKeys}
+        />
+        <AdjustSheets open={isSettingsSheetOpened()} onClose={() => setSettingsSheetOpened(false)} />
+      </Show>
       <Show when={isPrinting()}>
-        <SPPrint />
+        <SPPrint document={documentStore.document()} assets={assets()} />
       </Show>
       <AboutDialog open={isAboutDialogOpened()} onClose={() => setAboutDialogOpened(false)} />
     </Box>
