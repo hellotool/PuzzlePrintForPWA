@@ -1,6 +1,6 @@
 import { Box, Paper, type Theme } from '@suid/material';
 import type { SxProps } from '@suid/system';
-import type { JSX } from 'solid-js';
+import { Show, type JSX } from 'solid-js';
 import type { RectCm, SizeCm } from '@/domain/print';
 import { mergeMultiSxProps } from '@/shared/utils/suid';
 
@@ -14,6 +14,7 @@ interface PaperSurfaceProps {
   sx?: SxProps<Theme>;
   contentRef?: (element: HTMLDivElement) => void;
   tabIndex?: number;
+  footer?: JSX.Element;
   children: JSX.Element;
   onPointerDown?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
   onPointerMove?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
@@ -67,6 +68,23 @@ export default function PaperSurface(props: PaperSurfaceProps) {
       >
         {props.children}
       </Box>
+      <Show when={props.footer}>
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: '1%',
+            textAlign: 'center',
+            fontSize: 10,
+            lineHeight: 1.2,
+            color: 'text.secondary',
+            pointerEvents: 'none',
+          }}
+        >
+          {props.footer}
+        </Box>
+      </Show>
     </Paper>
   );
 }

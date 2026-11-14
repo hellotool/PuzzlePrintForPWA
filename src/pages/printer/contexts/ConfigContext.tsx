@@ -32,6 +32,7 @@ export function ConfigProvider(props: ConfigProviderProps) {
         layout: state.layout,
         print: state.print,
         preview: state.preview,
+        numbering: state.numbering,
       }),
     );
   });

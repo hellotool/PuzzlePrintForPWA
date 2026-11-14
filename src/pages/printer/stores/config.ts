@@ -1,10 +1,11 @@
 import { createStore, type SetStoreFunction } from 'solid-js/store';
-import type { PaperLayout, PreviewConfig, PrintConfig } from '../types/config';
+import type { NumberingConfig, PaperLayout, PreviewConfig, PrintConfig } from '../types/config';
 
 export interface ConfigStore {
   layout: PaperLayout;
   print: PrintConfig;
   preview: PreviewConfig;
+  numbering: NumberingConfig;
 }
 
 export const CONFIG_STORAGE_KEY = 'puzzle-print:config';
@@ -28,6 +29,9 @@ function createDefaultConfig(): ConfigStore {
       colorMode: 'gray',
       lightMode: false,
     },
+    numbering: {
+      enabled: false,
+    },
   };
 }
 
@@ -42,6 +46,7 @@ function loadStoredConfig(): ConfigStore {
       layout: { ...defaults.layout, ...stored.layout },
       print: { ...defaults.print, ...stored.print },
       preview: { ...defaults.preview, ...stored.preview },
+      numbering: { ...defaults.numbering, ...stored.numbering },
     };
   } catch {
     return defaults;
@@ -70,6 +75,9 @@ export interface ConfigActions {
   preview: {
     setColorMode: (mode: 'colorful' | 'gray') => void;
     toggleLightMode: () => void;
+  };
+  numbering: {
+    toggle: () => void;
   };
 }
 
@@ -127,6 +135,12 @@ export function createConfigActions(setState: SetStoreFunction<ConfigStore>): Co
       },
       toggleLightMode: () => {
         setState('preview', 'lightMode', (prev) => !prev);
+      },
+    },
+
+    numbering: {
+      toggle: () => {
+        setState('numbering', 'enabled', (prev) => !prev);
       },
     },
   };

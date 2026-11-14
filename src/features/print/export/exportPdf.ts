@@ -78,22 +78,31 @@ function downloadPdf(bytes: Uint8Array, fileName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+export interface ExportPdfOptions {
+  numbering?: boolean;
+}
+
 export async function exportPrintDocumentPdf(
   documentModel: PrintDocument,
   assets: PrintImageAssets,
+  options: ExportPdfOptions = {},
   fileName = `puzzle-print-${new Date().toISOString().slice(0, 10)}.pdf`,
 ) {
-  const { PDFDocument, degrees } = await import('pdf-lib');
+  const { PDFDocument, StandardFonts, degrees, rgb } = await import('pdf-lib');
   const pdf = await PDFDocument.create();
   pdf.setTitle('Puzzle Print');
   pdf.setCreator('Puzzle Print');
   const pageWidth = documentModel.paper.width * POINTS_PER_CM;
   const pageHeight = documentModel.paper.height * POINTS_PER_CM;
   const renderCache = new Map<string, Uint8Array>();
+  const numberingFont = options.numbering ? await pdf.embedFont(StandardFonts.Helvetica) : null;
+  let itemNumber = 0;
 
-  for (const pageModel of documentModel.pages) {
+  for (let pageIndex = 0; pageIndex < documentModel.pages.length; pageIndex += 1) {
+    const pageModel = documentModel.pages[pageIndex];
     const page = pdf.addPage([pageWidth, pageHeight]);
     for (const item of pageModel.items) {
+      itemNumber += 1;
       const asset = assets[item.imageKey];
       if (!asset) continue;
       const cacheKey = `${item.imageKey}|${item.fit}|${item.frame.width}x${item.frame.height}`;
@@ -111,18 +120,51 @@ export async function exportPrintDocumentPdf(
 
       if (item.rotation === 0) {
         page.drawImage(image, { x, y, width, height });
-        continue;
+      } else {
+        const radians = (item.rotation * Math.PI) / 180;
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+        page.drawImage(image, {
+          x: centerX - (width / 2) * Math.cos(radians) + (height / 2) * Math.sin(radians),
+          y: centerY - (width / 2) * Math.sin(radians) - (height / 2) * Math.cos(radians),
+          width,
+          height,
+          rotate: degrees(item.rotation),
+        });
       }
 
-      const radians = (item.rotation * Math.PI) / 180;
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
-      page.drawImage(image, {
-        x: centerX - (width / 2) * Math.cos(radians) + (height / 2) * Math.sin(radians),
-        y: centerY - (width / 2) * Math.sin(radians) - (height / 2) * Math.cos(radians),
-        width,
-        height,
-        rotate: degrees(item.rotation),
+      if (numberingFont) {
+        const label = String(itemNumber);
+        const size = 8;
+        const labelWidth = numberingFont.widthOfTextAtSize(label, size);
+        page.drawRectangle({
+          x: x + 2,
+          y: y + 2,
+          width: labelWidth + 4,
+          height: size + 4,
+          color: rgb(1, 1, 1),
+          opacity: 0.82,
+        });
+        page.drawText(label, {
+          x: x + 4,
+          y: y + 4,
+          size,
+          font: numberingFont,
+          color: rgb(0, 0, 0),
+        });
+      }
+    }
+
+    if (numberingFont) {
+      const label = `${pageIndex + 1} / ${documentModel.pages.length}`;
+      const size = 9;
+      const labelWidth = numberingFont.widthOfTextAtSize(label, size);
+      page.drawText(label, {
+        x: pageWidth / 2 - labelWidth / 2,
+        y: Math.max(6, (documentModel.margins.bottom * POINTS_PER_CM) / 2 - size / 2),
+        size,
+        font: numberingFont,
+        color: rgb(0, 0, 0),
       });
     }
   }

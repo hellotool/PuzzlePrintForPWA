@@ -11,6 +11,7 @@ interface MainAreaProps {
   assets: PrintImageAssets;
   colorMode: 'colorful' | 'gray';
   lightMode: boolean;
+  numberingEnabled: boolean;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onUpdateDocument: (document: PrintDocument) => void;
@@ -88,6 +89,7 @@ export default function MainArea(props: MainAreaProps) {
             document={props.document}
             assets={props.assets}
             colorMode={props.colorMode}
+            numberingEnabled={props.numberingEnabled}
             selectedIds={props.selectedIds}
             onSelectionChange={props.onSelectionChange}
             onUpdateDocument={props.onUpdateDocument}

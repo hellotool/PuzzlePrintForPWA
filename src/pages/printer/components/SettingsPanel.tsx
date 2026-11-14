@@ -179,6 +179,18 @@ export default function SettingsPanel() {
       <Divider />
 
       <List>
+        <ListSubheader>打印</ListSubheader>
+        <ListSwitchItem
+          checked={config.numbering.enabled}
+          onClick={() => configActions.numbering.toggle()}
+          title="页码与序号"
+          summary="在图片左下角和纸张页脚显示数字"
+        />
+      </List>
+
+      <Divider />
+
+      <List>
         <ListSubheader>预览</ListSubheader>
         <ListSwitchItem
           checked={config.preview.colorMode === 'gray'}

@@ -19,3 +19,7 @@ export interface PreviewConfig {
   colorMode: 'colorful' | 'gray';
   lightMode: boolean;
 }
+
+export interface NumberingConfig {
+  enabled: boolean;
+}

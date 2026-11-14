@@ -19,7 +19,7 @@ export function createImagesStore(config: ConfigStore) {
 }
 
 export interface ImagesActions {
-  addImageFiles: (imageFiles: FileList) => void;
+  addImageFiles: (imageFiles: FileList | readonly File[]) => void;
   refreshChunkedImages: () => void;
   clearImages: () => void;
 }
@@ -33,7 +33,7 @@ export function createImagesActions(setState: SetStoreFunction<ImagesStore>, con
   }
 
   return {
-    addImageFiles: (imageFiles: FileList) => {
+    addImageFiles: (imageFiles: FileList | readonly File[]) => {
       if (imageFiles.length === 0) {
         return;
       }

@@ -17,6 +17,7 @@ interface PrintEditorProps {
   document: PrintDocument;
   assets: PrintImageAssets;
   colorMode: 'colorful' | 'gray';
+  numberingEnabled: boolean;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onUpdateDocument: (document: PrintDocument) => void;
@@ -110,6 +111,12 @@ export default function PrintEditor(props: PrintEditorProps) {
     const pages = activeDocument().pages;
     return pages.length > 0 && pages[pages.length - 1].items.length >= capacity();
   };
+
+  function numberingStartAt(pageIndex: number) {
+    return activeDocument()
+      .pages.slice(0, pageIndex)
+      .reduce((total, page) => total + page.items.length, 0);
+  }
 
   function reorderItemsToIndex(itemIds: string[], toIndex: number) {
     const previous = captureItemRects();
@@ -373,6 +380,9 @@ export default function PrintEditor(props: PrintEditorProps) {
             document={activeDocument()}
             page={page()}
             pageNumber={index + 1}
+            pageCount={activeDocument().pages.length}
+            numberingEnabled={props.numberingEnabled}
+            numberingStart={numberingStartAt(index)}
             assets={props.assets}
             colorMode={props.colorMode}
             selectedIds={props.selectedIds}

@@ -6,6 +6,7 @@ import AboutDialog from '@/features/about';
 import { createPrinting } from '@/features/print';
 import { createPrintDocumentStore } from '@/features/print/editor/stores/createPrintDocumentStore';
 import { exportPrintDocumentPdf } from '@/features/print/export/exportPdf';
+import { usePasteImage } from '@/shared/hooks/usePasteImage';
 import { pickFiles } from '@/shared/utils/file';
 import ActionBar from './components/ActionBar';
 import AdjustSheets from './components/AdjustSheets';
@@ -24,6 +25,7 @@ function PrinterPageContent() {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const { state: images, actions: imagesActions } = useImages();
   const { state: config } = useConfig();
+  usePasteImage((files) => imagesActions.addImageFiles(files));
 
   const [isImageSheetOpened, setImageSheetOpened] = createSignal(false);
   const [isSettingsSheetOpened, setSettingsSheetOpened] = createSignal(false);
@@ -111,7 +113,9 @@ function PrinterPageContent() {
     if (isExporting()) return;
     setExporting(true);
     try {
-      await exportPrintDocumentPdf(documentStore.document(), assets());
+      await exportPrintDocumentPdf(documentStore.document(), assets(), {
+        numbering: config.numbering.enabled,
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -151,6 +155,7 @@ function PrinterPageContent() {
           assets={assets()}
           colorMode={config.preview.colorMode}
           lightMode={config.preview.lightMode}
+          numberingEnabled={config.numbering.enabled}
           selectedIds={selectedIds()}
           onSelectionChange={setSelectedIds}
           onUpdateDocument={documentStore.update}
@@ -208,7 +213,7 @@ function PrinterPageContent() {
         <AdjustSheets open={isSettingsSheetOpened()} onClose={() => setSettingsSheetOpened(false)} />
       </Show>
       <Show when={isPrinting()}>
-        <SPPrint document={documentStore.document()} assets={assets()} />
+        <SPPrint document={documentStore.document()} assets={assets()} numberingEnabled={config.numbering.enabled} />
       </Show>
       <AboutDialog open={isAboutDialogOpened()} onClose={() => setAboutDialogOpened(false)} />
     </Box>

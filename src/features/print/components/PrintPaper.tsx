@@ -12,8 +12,10 @@ export default function PrintPaper(props: PrintPaperProps) {
     <Box
       class="PrintPaper"
       sx={{
+        position: 'relative',
         width: '100%',
         aspectRatio: `${paperConfig.contentAspectRatio}`,
+        overflow: 'hidden',
         breakBefore: 'page',
       }}
     >

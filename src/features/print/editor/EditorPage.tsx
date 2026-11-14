@@ -12,6 +12,9 @@ interface EditorPageProps {
   document: PrintDocument;
   page: PrintPage;
   pageNumber: number;
+  pageCount: number;
+  numberingEnabled: boolean;
+  numberingStart: number;
   assets: PrintImageAssets;
   colorMode: 'colorful' | 'gray';
   selectedIds: string[];
@@ -243,6 +246,7 @@ export default function EditorPage(props: EditorPageProps) {
         contentRef={(element) => {
           contentRef = element;
         }}
+        footer={props.numberingEnabled ? `${props.pageNumber} / ${props.pageCount}` : undefined}
         tabIndex={0}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -258,6 +262,8 @@ export default function EditorPage(props: EditorPageProps) {
           mode="edit"
           selectedIds={props.selectedIds}
           draggingIds={props.draggingIds}
+          numberingEnabled={props.numberingEnabled}
+          numberingStart={props.numberingStart}
         />
         <Show when={placeholderFrame()}>
           {(frame) => (
