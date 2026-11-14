@@ -190,16 +190,24 @@ export function moveItemToIndex(document: PrintDocument, itemId: string, toIndex
 }
 
 export function applyItemTransforms(next: PrintDocument, previous: PrintDocument): PrintDocument {
-  const previousItems = new Map(previous.pages.flatMap((page) => page.items).map((item) => [item.imageKey, item]));
+  const nextItems = next.pages.flatMap((page) => page.items);
+  const nextByKey = new Map(nextItems.map((item) => [item.imageKey, item]));
+  const used = new Set<string>();
+  const items: PrintItem[] = [];
+
+  for (const item of previous.pages.flatMap((page) => page.items)) {
+    const candidate = nextByKey.get(item.imageKey);
+    if (!candidate || used.has(item.imageKey)) continue;
+    items.push({ ...candidate, fit: item.fit, rotation: item.rotation });
+    used.add(item.imageKey);
+  }
+  for (const item of nextItems) {
+    if (!used.has(item.imageKey)) items.push(item);
+  }
+
   return {
     ...next,
-    pages: next.pages.map((page) => ({
-      ...page,
-      items: page.items.map((item) => {
-        const previousItem = previousItems.get(item.imageKey);
-        return previousItem ? { ...item, rotation: previousItem.rotation } : item;
-      }),
-    })),
+    pages: rebuildGridPages(next, items),
   };
 }
 

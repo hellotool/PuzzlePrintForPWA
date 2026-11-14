@@ -102,9 +102,9 @@ export async function exportPrintDocumentPdf(
     const pageModel = documentModel.pages[pageIndex];
     const page = pdf.addPage([pageWidth, pageHeight]);
     for (const item of pageModel.items) {
-      itemNumber += 1;
       const asset = assets[item.imageKey];
       if (!asset) continue;
+      itemNumber += 1;
       const cacheKey = `${item.imageKey}|${item.fit}|${item.frame.width}x${item.frame.height}`;
       let png = renderCache.get(cacheKey);
       if (!png) {
