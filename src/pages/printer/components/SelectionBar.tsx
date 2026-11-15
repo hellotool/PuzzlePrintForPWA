@@ -1,10 +1,9 @@
 import DeleteOutlineIcon from '@suid/icons-material/DeleteOutline';
 import RotateLeftIcon from '@suid/icons-material/RotateLeft';
 import RotateRightIcon from '@suid/icons-material/RotateRight';
-import { Box, IconButton, Paper, Typography } from '@suid/material';
+import { IconButton, Paper } from '@suid/material';
 
 interface SelectionBarProps {
-  selectedCount: number;
   onRotateLeft: () => void;
   onRotateRight: () => void;
   onRemove: () => void;
@@ -24,17 +23,13 @@ export default function SelectionBar(props: SelectionBarProps) {
         bgcolor: 'background.paper',
       }}
     >
-      <Typography variant="body2" color="text.secondary">
-        已选 {props.selectedCount} 项
-      </Typography>
-      <Box sx={{ flexGrow: 1 }} />
-      <IconButton aria-label="左转90度" onClick={props.onRotateLeft}>
+      <IconButton aria-label="左转90度" title="左转90度" onClick={props.onRotateLeft}>
         <RotateLeftIcon />
       </IconButton>
-      <IconButton aria-label="右转90度" onClick={props.onRotateRight}>
+      <IconButton aria-label="右转90度" title="右转90度" onClick={props.onRotateRight}>
         <RotateRightIcon />
       </IconButton>
-      <IconButton aria-label="移除选中项" color="error" onClick={props.onRemove}>
+      <IconButton aria-label="移除选中项" title="移除选中项" color="error" onClick={props.onRemove}>
         <DeleteOutlineIcon />
       </IconButton>
     </Paper>

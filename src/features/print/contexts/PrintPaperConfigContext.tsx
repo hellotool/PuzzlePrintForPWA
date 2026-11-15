@@ -1,17 +1,33 @@
 import { createContext, type JSX, splitProps, useContext } from 'solid-js';
 
+export interface PrintPaperContentInset {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface PrintPaperConfig {
+  compatibility: boolean;
   contentAspectRatio: number;
+  paperAspectRatio: number;
+  contentInset: PrintPaperContentInset;
+  marginBottomFraction: number;
 }
 
 const PrintPaperConfigContext = createContext<PrintPaperConfig>();
 
-interface PrintPaperConfigProviderProps {
+interface PrintPaperConfigProviderProps extends PrintPaperConfig {
   children: JSX.Element;
-  contentAspectRatio: number;
 }
 export function PrintPaperConfigProvider(props: PrintPaperConfigProviderProps) {
-  const [value] = splitProps(props, ['contentAspectRatio']);
+  const [value] = splitProps(props, [
+    'compatibility',
+    'contentAspectRatio',
+    'paperAspectRatio',
+    'contentInset',
+    'marginBottomFraction',
+  ]);
   return <PrintPaperConfigContext.Provider value={value}>{props.children}</PrintPaperConfigContext.Provider>;
 }
 

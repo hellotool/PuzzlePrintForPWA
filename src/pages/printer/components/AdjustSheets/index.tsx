@@ -10,6 +10,7 @@ interface AdjustSheetsProps {
 
 export default function AdjustSheets(props: AdjustSheetsProps) {
   const hasTouch = useMediaQuery('(any-pointer: coarse)');
+  const hasFinePointer = useMediaQuery('(any-pointer: fine)');
 
   return (
     <Drawer
@@ -30,7 +31,7 @@ export default function AdjustSheets(props: AdjustSheetsProps) {
       <Show when={hasTouch()}>
         <DragBar />
       </Show>
-      <SettingsPanel />
+      <SettingsPanel onClose={props.onClose} showCloseButton={hasFinePointer()} />
     </Drawer>
   );
 }

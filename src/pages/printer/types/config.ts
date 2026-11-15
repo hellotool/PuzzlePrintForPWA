@@ -6,6 +6,7 @@ export interface PaperLayout {
 }
 
 export interface PrintConfig {
+  compatibility: boolean;
   contentMarginPreset: 'default' | 'custom';
   contentMarginLeft: number;
   contentMarginTop: number;
@@ -21,5 +22,6 @@ export interface PreviewConfig {
 }
 
 export interface NumberingConfig {
-  enabled: boolean;
+  imageEnabled: boolean;
+  pageEnabled: boolean;
 }

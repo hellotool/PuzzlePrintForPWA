@@ -1,6 +1,7 @@
 import { Box, Paper, Typography } from '@suid/material';
 import type { BoxProps } from '@suid/system/Box';
 import { splitProps } from 'solid-js';
+import { setDownloadUrl } from '@/features/print/utils/drag';
 import type { SnapImage } from '../../types/image';
 
 interface ImageItemProps extends BoxProps {
@@ -8,8 +9,16 @@ interface ImageItemProps extends BoxProps {
 }
 export default function ImageItem(props: ImageItemProps) {
   const [localProps, otherProps] = splitProps(props, ['image']);
+
+  function handleDragStart(event: DragEvent) {
+    if (!event.dataTransfer) return;
+    event.dataTransfer.effectAllowed = 'copy';
+    event.dataTransfer.setData('text/plain', localProps.image.name);
+    setDownloadUrl(event.dataTransfer, localProps.image);
+  }
+
   return (
-    <Box title={localProps.image.name} {...otherProps}>
+    <Box title={localProps.image.name} draggable onDragStart={handleDragStart} {...otherProps}>
       <Paper
         sx={{
           width: '100%',
@@ -20,6 +29,7 @@ export default function ImageItem(props: ImageItemProps) {
       >
         <Box
           component="img"
+          draggable={false}
           sx={{
             width: '100%',
             height: '100%',

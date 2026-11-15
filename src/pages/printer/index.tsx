@@ -1,5 +1,5 @@
 import { Box, useMediaQuery, useTheme } from '@suid/material';
-import { createEffect, createMemo, createSignal, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import type { PrintImageAssets } from '@/domain/print';
 import { buildGridDocument, removeItemsFromDocument, rotateItems } from '@/domain/print';
 import AboutDialog from '@/features/about';
@@ -11,7 +11,6 @@ import { pickFiles } from '@/shared/utils/file';
 import ActionBar from './components/ActionBar';
 import AdjustSheets from './components/AdjustSheets';
 import AppBarArea from './components/AppBarArea';
-import ImagePanel from './components/ImagePanel';
 import ImageSheets from './components/ImageSheets';
 import MainArea from './components/MainArea';
 import FloatingSelectionBar from './components/FloatingSelectionBar';
@@ -54,7 +53,7 @@ function PrinterPageContent() {
   const documentStore = createPrintDocumentStore(documentSource);
   const assets = createMemo<PrintImageAssets>(() => {
     return Object.fromEntries(
-      images.images.map((image) => [image.key, { url: image.url, name: image.name }]),
+      images.images.map((image) => [image.key, { url: image.url, name: image.name, type: image.type }]),
     ) as PrintImageAssets;
   });
 
@@ -66,6 +65,29 @@ function PrinterPageContent() {
     if (next.length !== ids.length) {
       setSelectedIds(next);
     }
+  });
+
+  // 阻止浏览器在未经处理的区域放下文件时直接打开文件导致页面跳转。
+  onMount(() => {
+    function guard(event: DragEvent) {
+      if (event.dataTransfer?.types.includes('Files')) {
+        event.preventDefault();
+      }
+    }
+    function deselectOnOutside(event: PointerEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('[data-print-item-id]') || target.closest('[data-print-selection-bar]')) return;
+      setSelectedIds([]);
+    }
+    window.addEventListener('dragover', guard);
+    window.addEventListener('drop', guard);
+    document.addEventListener('pointerdown', deselectOnOutside);
+    onCleanup(() => {
+      window.removeEventListener('dragover', guard);
+      window.removeEventListener('drop', guard);
+      document.removeEventListener('pointerdown', deselectOnOutside);
+    });
   });
 
   function openImageSheet() {
@@ -114,7 +136,8 @@ function PrinterPageContent() {
     setExporting(true);
     try {
       await exportPrintDocumentPdf(documentStore.document(), assets(), {
-        numbering: config.numbering.enabled,
+        imageNumbering: config.numbering.imageEnabled,
+        pageNumbering: config.numbering.pageEnabled,
       });
     } catch (error) {
       console.error(error);
@@ -125,37 +148,30 @@ function PrinterPageContent() {
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <AppBarArea onAboutClick={() => setAboutDialogOpened(true)} />
+      <AppBarArea
+        canUndo={documentStore.canUndo()}
+        canRedo={documentStore.canRedo()}
+        onUndo={documentStore.undo}
+        onRedo={documentStore.redo}
+        onAboutClick={() => setAboutDialogOpened(true)}
+      />
       <Box
         sx={{
           flexGrow: 1,
           minHeight: 0,
           position: 'relative',
           display: 'grid',
-          gridTemplateColumns: isDesktop() ? '252px minmax(0, 1fr) 292px' : 'minmax(0, 1fr)',
+          gridTemplateColumns: isDesktop() ? 'minmax(0, 1fr) 292px' : 'minmax(0, 1fr)',
           overflow: 'hidden',
         }}
       >
-        <Show when={isDesktop()}>
-          <Box
-            sx={{
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              borderRight: 1,
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <ImagePanel excludedKeys={documentStore.document().excludedImageKeys} />
-          </Box>
-        </Show>
         <MainArea
           document={documentStore.document()}
           assets={assets()}
           colorMode={config.preview.colorMode}
           lightMode={config.preview.lightMode}
-          numberingEnabled={config.numbering.enabled}
+          imageNumberingEnabled={config.numbering.imageEnabled}
+          pageNumberingEnabled={config.numbering.pageEnabled && config.print.compatibility}
           selectedIds={selectedIds()}
           onSelectionChange={setSelectedIds}
           onUpdateDocument={documentStore.update}
@@ -165,6 +181,7 @@ function PrinterPageContent() {
           onUndo={documentStore.undo}
           onRedo={documentStore.redo}
           onAddImages={handleAddImages}
+          onAddImageFiles={imagesActions.addImageFiles}
           onDragStateChange={setDragging}
         />
         <Show when={isDesktop()}>
@@ -184,7 +201,6 @@ function PrinterPageContent() {
           <FloatingSelectionBar
             selectedIds={selectedIds()}
             document={documentStore.document()}
-            selectedCount={selectedIds().length}
             onRotateLeft={() => rotateSelected(-90)}
             onRotateRight={() => rotateSelected(90)}
             onRemove={removeSelected}
@@ -193,14 +209,13 @@ function PrinterPageContent() {
       </Box>
       <ActionBar
         canPrint={images.images.length > 0}
-        canUndo={documentStore.canUndo()}
-        canRedo={documentStore.canRedo()}
         isExporting={isExporting()}
-        showPanelButtons={!isDesktop()}
+        imageCount={images.images.length}
+        imagePopupMode={isDesktop()}
+        showSettingsButton={!isDesktop()}
+        excludedKeys={documentStore.document().excludedImageKeys}
         onPrint={handlePrint}
         onExportPdf={handleExportPdf}
-        onUndo={documentStore.undo}
-        onRedo={documentStore.redo}
         onOpenImages={openImageSheet}
         onOpenSettings={openSettingsSheet}
       />
@@ -213,7 +228,13 @@ function PrinterPageContent() {
         <AdjustSheets open={isSettingsSheetOpened()} onClose={() => setSettingsSheetOpened(false)} />
       </Show>
       <Show when={isPrinting()}>
-        <SPPrint document={documentStore.document()} assets={assets()} numberingEnabled={config.numbering.enabled} />
+        <SPPrint
+          document={documentStore.document()}
+          assets={assets()}
+          compatibility={config.print.compatibility}
+          imageNumberingEnabled={config.numbering.imageEnabled}
+          pageNumberingEnabled={config.numbering.pageEnabled && config.print.compatibility}
+        />
       </Show>
       <AboutDialog open={isAboutDialogOpened()} onClose={() => setAboutDialogOpened(false)} />
     </Box>

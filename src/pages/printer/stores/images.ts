@@ -43,6 +43,7 @@ export function createImagesActions(setState: SetStoreFunction<ImagesStore>, con
           key: nanoid(),
           url: URL.createObjectURL(file),
           name: file.name,
+          type: file.type,
         }));
       setState(
         produce((state) => {

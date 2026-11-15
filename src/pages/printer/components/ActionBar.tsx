@@ -1,29 +1,49 @@
 import ArrowDropDownIcon from '@suid/icons-material/ArrowDropDown';
 import PhotoLibraryOutlinedIcon from '@suid/icons-material/PhotoLibraryOutlined';
 import PrintIcon from '@suid/icons-material/Print';
-import RedoIcon from '@suid/icons-material/Redo';
 import SettingsIcon from '@suid/icons-material/Settings';
-import UndoIcon from '@suid/icons-material/Undo';
-import { Box, Button, ButtonGroup, IconButton, Menu, MenuItem, Paper } from '@suid/material';
-import { createSignal } from 'solid-js';
+import {
+  Badge,
+  Box,
+  Button,
+  ButtonGroup,
+  IconButton,
+  Menu,
+  MenuItem,
+  Paper,
+  Popover,
+  useMediaQuery,
+} from '@suid/material';
+import { createSignal, Show } from 'solid-js';
+import ImagePanel from './ImagePanel';
 
 interface ActionBarProps {
   canPrint: boolean;
-  canUndo: boolean;
-  canRedo: boolean;
   isExporting: boolean;
-  showPanelButtons: boolean;
+  imageCount: number;
+  imagePopupMode: boolean;
+  showSettingsButton: boolean;
+  excludedKeys?: string[];
   onPrint: () => void;
   onExportPdf: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
   onOpenImages: () => void;
   onOpenSettings: () => void;
 }
 
 export default function ActionBar(props: ActionBarProps) {
+  const hasFinePointer = useMediaQuery('(any-pointer: fine)');
   const [isExportMenuOpened, setExportMenuOpened] = createSignal(false);
+  const [isImagePopupOpened, setImagePopupOpened] = createSignal(false);
   let exportMenuButtonRef: HTMLButtonElement | undefined;
+  let imageButtonRef: HTMLButtonElement | undefined;
+
+  function handleImagesClick() {
+    if (props.imagePopupMode) {
+      setImagePopupOpened(true);
+    } else {
+      props.onOpenImages();
+    }
+  }
 
   return (
     <Paper
@@ -42,23 +62,24 @@ export default function ActionBar(props: ActionBarProps) {
         flexShrink: 0,
       }}
     >
-      {props.showPanelButtons && (
-        <>
-          <IconButton aria-label="打开图片面板" onClick={props.onOpenImages}>
-            <PhotoLibraryOutlinedIcon />
-          </IconButton>
-          <IconButton aria-label="打开设置面板" onClick={props.onOpenSettings}>
-            <SettingsIcon />
-          </IconButton>
-        </>
-      )}
+      <IconButton
+        aria-label="图片面板"
+        title="图片面板"
+        aria-haspopup={props.imagePopupMode ? 'dialog' : undefined}
+        aria-expanded={props.imagePopupMode && isImagePopupOpened() ? 'true' : undefined}
+        onClick={handleImagesClick}
+        ref={imageButtonRef}
+      >
+        <Badge color="primary" badgeContent={props.imageCount} max={999} invisible={props.imageCount === 0}>
+          <PhotoLibraryOutlinedIcon />
+        </Badge>
+      </IconButton>
+      <Show when={props.showSettingsButton}>
+        <IconButton aria-label="打开设置面板" title="选项" onClick={props.onOpenSettings}>
+          <SettingsIcon />
+        </IconButton>
+      </Show>
       <Box sx={{ flexGrow: 1 }} />
-      <IconButton aria-label="撤销" disabled={!props.canUndo} onClick={props.onUndo}>
-        <UndoIcon />
-      </IconButton>
-      <IconButton aria-label="重做" disabled={!props.canRedo} onClick={props.onRedo}>
-        <RedoIcon />
-      </IconButton>
       <ButtonGroup variant="contained">
         <Button startIcon={<PrintIcon />} disabled={!props.canPrint} onClick={props.onPrint}>
           打印
@@ -86,6 +107,33 @@ export default function ActionBar(props: ActionBarProps) {
           {props.isExporting ? '导出中…' : '导出 PDF'}
         </MenuItem>
       </Menu>
+      <Show when={props.imagePopupMode}>
+        <Popover
+          anchorEl={imageButtonRef}
+          open={isImagePopupOpened()}
+          onClose={() => setImagePopupOpened(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          marginThreshold={8}
+          PaperProps={{
+            sx: {
+              width: 340,
+              maxWidth: 'calc(100vw - 16px)',
+              height: 'min(62vh, 520px)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              borderRadius: 2,
+            },
+          }}
+        >
+          <ImagePanel
+            onClose={() => setImagePopupOpened(false)}
+            showCloseButton={hasFinePointer()}
+            excludedKeys={props.excludedKeys}
+          />
+        </Popover>
+      </Show>
     </Paper>
   );
 }

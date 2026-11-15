@@ -49,7 +49,7 @@ export default function AboutDialog(props: AboutDialogProps) {
           overflowWrap: 'break-word',
         }}
       >
-        <AboutHeader icon={APP_ICON} name="拼图打印" version={APP_VERSION} />
+        <AboutHeader icon={APP_ICON} name="哈兔拼图打印" version={APP_VERSION} />
         <DialogContentText
           component="div"
           sx={{

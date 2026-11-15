@@ -6,15 +6,23 @@ interface ListSwitchItemProps {
   title?: string;
   summary?: string;
   checked?: boolean;
+  disabled?: boolean;
   onClick?: JSX.EventHandlerUnion<HTMLDivElement, MouseEvent, JSX.EventHandler<HTMLDivElement, MouseEvent>>;
 }
 export default function ListSwitchItem(props: ListSwitchItemProps) {
   return (
     <ListItem disablePadding>
-      <ListItemButton onClick={props.onClick}>
+      <ListItemButton onClick={props.onClick} disabled={props.disabled}>
         {props.icon ? <ListItemIcon>{props.icon}</ListItemIcon> : null}
         <ListItemText primary={props.title} secondary={props.summary} />
-        <Switch aria-hidden checked={props.checked} edge="end" sx={{ pointerEvents: 'none' }} tabIndex={-1} />
+        <Switch
+          aria-hidden
+          checked={props.checked}
+          disabled={props.disabled}
+          edge="end"
+          sx={{ pointerEvents: 'none' }}
+          tabIndex={-1}
+        />
       </ListItemButton>
     </ListItem>
   );

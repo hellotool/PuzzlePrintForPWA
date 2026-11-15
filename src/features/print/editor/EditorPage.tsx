@@ -4,25 +4,29 @@ import KeyboardArrowUpIcon from '@suid/icons-material/KeyboardArrowUp';
 import { alpha, Box, IconButton, Typography } from '@suid/material';
 import { createSignal, onCleanup, Show } from 'solid-js';
 import { getGridFrame, type PrintDocument, type PrintImageAssets, type PrintPage, type RectCm } from '@/domain/print';
+import { hasPrintItems, PRINT_ITEMS_MIME, setDownloadUrl } from '@/features/print/utils/drag';
 import PageItems from '../components/PageItems';
 import PaperSurface from '../components/PaperSurface';
 import PrintPlaceholderCell from '../components/PrintPlaceholderCell';
+import type { DragStartInfo } from './PrintEditor';
 
 interface EditorPageProps {
   document: PrintDocument;
   page: PrintPage;
   pageNumber: number;
   pageCount: number;
-  numberingEnabled: boolean;
+  imageNumberingEnabled: boolean;
+  pageNumberingEnabled: boolean;
   numberingStart: number;
   assets: PrintImageAssets;
   colorMode: 'colorful' | 'gray';
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   draggingIds: string[];
-  onDragStart: (itemId: string, clientX: number, clientY: number) => void;
+  onDragStart: (itemId: string, clientX: number, clientY: number) => DragStartInfo | undefined;
   onDragMove: (clientX: number, clientY: number) => void;
   onDragEnd: (clientX: number, clientY: number) => void;
+  onDragDrop: () => void;
   onDragCancel: () => void;
   onDeleteSelected: () => void;
   showAddPlaceholder: boolean;
@@ -36,29 +40,46 @@ interface EditorPageProps {
   onRedo: () => void;
 }
 
-type Gesture =
-  | {
-      type: 'drag';
-      itemId: string;
-      pointerId: number;
-      startX: number;
-      startY: number;
-      started: boolean;
-    }
-  | {
-      type: 'marquee';
-      pointerId: number;
-      startX: number;
-      startY: number;
-      rect: DOMRect;
-    };
+interface MarqueeGesture {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  rect: DOMRect;
+}
+
+function createNativeDragGhost(info: DragStartInfo): HTMLElement {
+  const ghost = document.createElement('div');
+  ghost.style.cssText = `position:fixed;left:-10000px;top:-10000px;width:${info.width}px;height:${info.height}px;pointer-events:none;`;
+  const img = document.createElement('img');
+  img.src = info.url;
+  img.alt = '';
+  img.draggable = false;
+  img.style.cssText = `width:100%;height:100%;object-fit:contain;transform:rotate(${info.rotation}deg);opacity:0.9;box-shadow:0 8px 24px rgba(0,0,0,0.35);`;
+  ghost.appendChild(img);
+  if (info.itemIds.length > 1) {
+    const badge = document.createElement('div');
+    badge.textContent = String(info.itemIds.length);
+    badge.style.cssText =
+      'position:absolute;top:4px;right:4px;min-width:20px;padding:2px 6px;border-radius:10px;background:#00796b;color:#fff;font-size:12px;font-weight:600;line-height:1.5;text-align:center;font-family:sans-serif;';
+    ghost.appendChild(badge);
+  }
+  return ghost;
+}
 
 export default function EditorPage(props: EditorPageProps) {
   let contentRef: HTMLDivElement | undefined;
-  let gesture: Gesture | null = null;
+  let marqueeGesture: MarqueeGesture | null = null;
+  let nativeGhostEl: HTMLElement | null = null;
   const [marquee, setMarquee] = createSignal<RectCm | null>(null);
 
-  onCleanup(cleanupPointer);
+  onCleanup(() => {
+    cleanupMarquee();
+    if (nativeGhostEl) {
+      nativeGhostEl.remove();
+      nativeGhostEl = null;
+      props.onDragCancel();
+    }
+  });
 
   const placeholderFrame = () => {
     if (!props.showAddPlaceholder) return null;
@@ -84,9 +105,9 @@ export default function EditorPage(props: EditorPageProps) {
     };
   }
 
-  function cleanupPointer() {
-    const active = gesture;
-    gesture = null;
+  function cleanupMarquee() {
+    const active = marqueeGesture;
+    marqueeGesture = null;
     setMarquee(null);
     if (active && contentRef?.hasPointerCapture(active.pointerId)) {
       contentRef.releasePointerCapture(active.pointerId);
@@ -94,19 +115,8 @@ export default function EditorPage(props: EditorPageProps) {
   }
 
   function handlePointerMove(event: PointerEvent) {
-    const active = gesture;
+    const active = marqueeGesture;
     if (!active || event.pointerId !== active.pointerId) return;
-
-    if (active.type === 'drag') {
-      if (!active.started) {
-        if (Math.hypot(event.clientX - active.startX, event.clientY - active.startY) < 4) return;
-        active.started = true;
-        props.onDragStart(active.itemId, event.clientX, event.clientY);
-      }
-      props.onDragMove(event.clientX, event.clientY);
-      return;
-    }
-
     const pointer = pointerToContent(event.clientX, event.clientY);
     if (!pointer) return;
     const width = Math.abs(event.clientX - active.startX);
@@ -133,25 +143,9 @@ export default function EditorPage(props: EditorPageProps) {
   }
 
   function handlePointerUp(event: PointerEvent) {
-    const active = gesture;
+    const active = marqueeGesture;
     if (!active || event.pointerId !== active.pointerId) return;
-    if (active.type === 'drag' && active.started) {
-      props.onDragEnd(event.clientX, event.clientY);
-    }
-    cleanupPointer();
-  }
-
-  function handlePointerCancel() {
-    if (gesture?.type === 'drag' && gesture.started) {
-      props.onDragCancel();
-    }
-    cleanupPointer();
-  }
-
-  function handleLostPointerCapture(event: PointerEvent) {
-    if (gesture?.type !== 'drag' || !gesture.started || event.pointerId !== gesture.pointerId) return;
-    props.onDragCancel();
-    cleanupPointer();
+    cleanupMarquee();
   }
 
   function handlePointerDown(event: PointerEvent) {
@@ -161,23 +155,14 @@ export default function EditorPage(props: EditorPageProps) {
     if (!contentRef) return;
     const rect = contentRef.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
-    if (gesture) cleanupPointer();
-    event.preventDefault();
+    if (marqueeGesture) cleanupMarquee();
     contentRef.focus();
 
-    if (!itemId) {
-      if (!(event.shiftKey || event.ctrlKey || event.metaKey)) {
-        props.onSelectionChange([]);
-      }
-      gesture = {
-        type: 'marquee',
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        rect,
-      };
-    } else {
-      const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+    const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+
+    if (itemId) {
+      // 不 preventDefault、不捕获指针：把拖拽交给原生 drag 事件（鼠标直接拖、触屏长按拖），
+      // 同时保留 touch-action 的纵向滚动，避免与滑动冲突。
       if (additive && props.selectedIds.includes(itemId)) {
         props.onSelectionChange(props.selectedIds.filter((id) => id !== itemId));
         return;
@@ -185,16 +170,21 @@ export default function EditorPage(props: EditorPageProps) {
       if (!props.selectedIds.includes(itemId)) {
         props.onSelectionChange(additive ? [...props.selectedIds, itemId] : [itemId]);
       }
-      gesture = {
-        type: 'drag',
-        itemId,
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        started: false,
-      };
+      return;
     }
 
+    // 框选仅鼠标；触屏空白处交给全局"点外部取消选中"与原生滚动。
+    if (event.pointerType !== 'mouse') return;
+    event.preventDefault();
+    if (!additive) {
+      props.onSelectionChange([]);
+    }
+    marqueeGesture = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      rect,
+    };
     try {
       (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     } catch {
@@ -202,15 +192,70 @@ export default function EditorPage(props: EditorPageProps) {
     }
   }
 
-  function handleKeyDown(event: KeyboardEvent) {
-    if (gesture?.type === 'drag' && gesture.started) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        props.onDragCancel();
-        cleanupPointer();
-      }
+  function handleDragStart(event: DragEvent) {
+    const itemElement = (event.target as HTMLElement | null)?.closest('[data-print-item-id]') as HTMLElement | null;
+    const itemId = itemElement?.dataset.printItemId;
+    // polyfill 与浏览器原生可能各发起一次 dragstart，只接受第一次。
+    if (!itemId || !event.dataTransfer || marqueeGesture || nativeGhostEl) {
+      event.preventDefault();
       return;
     }
+    if (!props.selectedIds.includes(itemId)) {
+      props.onSelectionChange([itemId]);
+    }
+    const info = props.onDragStart(itemId, event.clientX, event.clientY);
+    if (!info) {
+      event.preventDefault();
+      return;
+    }
+    const dataTransfer = event.dataTransfer;
+    dataTransfer.effectAllowed = 'copyMove';
+    dataTransfer.setData(PRINT_ITEMS_MIME, JSON.stringify(info.itemIds));
+    dataTransfer.setData('text/plain', info.name);
+    if (info.url) {
+      setDownloadUrl(dataTransfer, { url: info.url, name: info.name, type: info.type });
+    }
+    nativeGhostEl = createNativeDragGhost(info);
+    document.body.appendChild(nativeGhostEl);
+    dataTransfer.setDragImage(nativeGhostEl, info.width / 2, info.height / 2);
+  }
+
+  function handleDrag(event: DragEvent) {
+    if (!nativeGhostEl) return;
+    if (event.clientX === 0 && event.clientY === 0) return;
+    props.onDragMove(event.clientX, event.clientY);
+  }
+
+  function handleDragEnd(event: DragEvent) {
+    if (!nativeGhostEl) return;
+    nativeGhostEl.remove();
+    nativeGhostEl = null;
+    props.onDragEnd(event.clientX, event.clientY);
+  }
+
+  function handleDragEnter(event: DragEvent) {
+    // polyfill 以 dragenter 是否被 preventDefault 认定 drop target，必须接受内部拖拽。
+    if (!event.dataTransfer || !hasPrintItems(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  function handleDragOver(event: DragEvent) {
+    if (!event.dataTransfer || !hasPrintItems(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    props.onDragMove(event.clientX, event.clientY);
+  }
+
+  function handleDrop(event: DragEvent) {
+    if (!event.dataTransfer || !hasPrintItems(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    props.onDragDrop();
+    props.onDragMove(event.clientX, event.clientY);
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
       event.preventDefault();
       if (event.shiftKey) {
@@ -246,14 +291,20 @@ export default function EditorPage(props: EditorPageProps) {
         contentRef={(element) => {
           contentRef = element;
         }}
-        footer={props.numberingEnabled ? `${props.pageNumber} / ${props.pageCount}` : undefined}
+        footer={props.pageNumberingEnabled ? `${props.pageNumber} / ${props.pageCount}` : undefined}
         tabIndex={0}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onLostPointerCapture={handleLostPointerCapture}
+        onPointerCancel={handlePointerUp}
+        onLostPointerCapture={handlePointerUp}
         onKeyDown={handleKeyDown}
+        onDragStart={handleDragStart}
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
       >
         <PageItems
           page={props.page}
@@ -262,7 +313,7 @@ export default function EditorPage(props: EditorPageProps) {
           mode="edit"
           selectedIds={props.selectedIds}
           draggingIds={props.draggingIds}
-          numberingEnabled={props.numberingEnabled}
+          numberingEnabled={props.imageNumberingEnabled}
           numberingStart={props.numberingStart}
         />
         <Show when={placeholderFrame()}>

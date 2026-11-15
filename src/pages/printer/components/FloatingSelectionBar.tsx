@@ -6,7 +6,6 @@ import SelectionBar from './SelectionBar';
 interface FloatingSelectionBarProps {
   selectedIds: string[];
   document: PrintDocument;
-  selectedCount: number;
   onRotateLeft: () => void;
   onRotateRight: () => void;
   onRemove: () => void;
@@ -83,6 +82,7 @@ export default function FloatingSelectionBar(props: FloatingSelectionBarProps) {
         toolbarRef = element;
         schedule();
       }}
+      data-print-selection-bar="true"
       sx={{
         position: 'fixed',
         top: position()?.top ?? 0,
@@ -91,12 +91,7 @@ export default function FloatingSelectionBar(props: FloatingSelectionBarProps) {
         visibility: position() ? 'visible' : 'hidden',
       }}
     >
-      <SelectionBar
-        selectedCount={props.selectedCount}
-        onRotateLeft={props.onRotateLeft}
-        onRotateRight={props.onRotateRight}
-        onRemove={props.onRemove}
-      />
+      <SelectionBar onRotateLeft={props.onRotateLeft} onRotateRight={props.onRotateRight} onRemove={props.onRemove} />
     </Box>
   );
 }

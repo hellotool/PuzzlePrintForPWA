@@ -28,6 +28,7 @@ export default function PageItems(props: PageItemsProps) {
           <Box
             data-print-item-id={item().id}
             data-print-selected={selected() ? 'true' : undefined}
+            draggable={props.mode === 'edit' ? true : undefined}
             sx={{
               position: 'absolute',
               left: toPercent(item().frame.x, props.content.width),

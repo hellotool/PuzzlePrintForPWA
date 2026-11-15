@@ -2,8 +2,9 @@ import AddIcon from '@suid/icons-material/Add';
 import ClearAllOutlinedIcon from '@suid/icons-material/ClearAllOutlined';
 import CloseIcon from '@suid/icons-material/Close';
 import PhotoLibraryOutlinedIcon from '@suid/icons-material/PhotoLibraryOutlined';
-import { alpha, Box, Button, Fade, IconButton, Typography, useTheme } from '@suid/material';
+import { alpha, Box, Button, IconButton, Typography, useTheme } from '@suid/material';
 import { createSignal, For, Show } from 'solid-js';
+import { hasExternalFiles } from '@/features/print/utils/drag';
 import { pickFiles } from '@/shared/utils/file';
 import { useImages } from '../contexts/ImagesContext';
 import ImageItem from './ImageSheets/ImageItem';
@@ -17,7 +18,8 @@ interface ImagePanelProps {
 export default function ImagePanel(props: ImagePanelProps) {
   const theme = useTheme();
   const { state: images, actions: imagesActions } = useImages();
-  const [dragEntered, setDragEntered] = createSignal(false);
+  const [dragDepth, setDragDepth] = createSignal(0);
+  const dragEntered = () => dragDepth() > 0;
   const visibleImages = () => images.images.filter((image) => !props.excludedKeys?.includes(image.key));
 
   let isSelfDrag = false;
@@ -47,28 +49,26 @@ export default function ImagePanel(props: ImagePanelProps) {
   }
 
   function handleDragEnter(event: DragEvent) {
-    if (!isSelfDrag && event.dataTransfer?.types.includes('Files')) {
-      setDragEntered(true);
-    }
+    if (isSelfDrag || !hasExternalFiles(event.dataTransfer)) return;
+    setDragDepth((depth) => depth + 1);
   }
 
   function handleDragOver(event: DragEvent) {
-    if (!isSelfDrag && event.dataTransfer) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = event.dataTransfer.types.includes('Files') ? 'copy' : 'none';
-    }
+    if (isSelfDrag || !hasExternalFiles(event.dataTransfer) || !event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
   }
 
-  function handleDragLeave() {
-    setDragEntered(false);
+  function handleDragLeave(event: DragEvent) {
+    if (isSelfDrag || !hasExternalFiles(event.dataTransfer)) return;
+    setDragDepth((depth) => Math.max(0, depth - 1));
   }
 
   function handleDrop(event: DragEvent) {
+    if (!hasExternalFiles(event.dataTransfer) || !event.dataTransfer) return;
     event.preventDefault();
-    setDragEntered(false);
-    if (event.dataTransfer?.files) {
-      imagesActions.addImageFiles(event.dataTransfer.files);
-    }
+    setDragDepth(0);
+    imagesActions.addImageFiles(event.dataTransfer.files);
   }
 
   return (
@@ -158,7 +158,7 @@ export default function ImagePanel(props: ImagePanelProps) {
             </For>
           </Box>
         </Show>
-        <Fade in={dragEntered()}>
+        <Show when={dragEntered()}>
           <Box
             sx={{
               position: 'absolute',
@@ -169,11 +169,12 @@ export default function ImagePanel(props: ImagePanelProps) {
               borderRadius: 1,
               backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.hoverOpacity),
               color: 'primary.main',
+              pointerEvents: 'none',
             }}
           >
             <Typography variant="body2">拖到此处添加图片</Typography>
           </Box>
-        </Fade>
+        </Show>
       </Box>
     </Box>
   );

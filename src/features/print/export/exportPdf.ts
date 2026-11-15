@@ -79,7 +79,8 @@ function downloadPdf(bytes: Uint8Array, fileName: string) {
 }
 
 export interface ExportPdfOptions {
-  numbering?: boolean;
+  imageNumbering?: boolean;
+  pageNumbering?: boolean;
 }
 
 export async function exportPrintDocumentPdf(
@@ -95,7 +96,8 @@ export async function exportPrintDocumentPdf(
   const pageWidth = documentModel.paper.width * POINTS_PER_CM;
   const pageHeight = documentModel.paper.height * POINTS_PER_CM;
   const renderCache = new Map<string, Uint8Array>();
-  const numberingFont = options.numbering ? await pdf.embedFont(StandardFonts.Helvetica) : null;
+  const numberingFont =
+    options.imageNumbering || options.pageNumbering ? await pdf.embedFont(StandardFonts.Helvetica) : null;
   let itemNumber = 0;
 
   for (let pageIndex = 0; pageIndex < documentModel.pages.length; pageIndex += 1) {
@@ -133,7 +135,7 @@ export async function exportPrintDocumentPdf(
         });
       }
 
-      if (numberingFont) {
+      if (numberingFont && options.imageNumbering) {
         const label = String(itemNumber);
         const size = 8;
         const labelWidth = numberingFont.widthOfTextAtSize(label, size);
@@ -155,7 +157,7 @@ export async function exportPrintDocumentPdf(
       }
     }
 
-    if (numberingFont) {
+    if (numberingFont && options.pageNumbering) {
       const label = `${pageIndex + 1} / ${documentModel.pages.length}`;
       const size = 9;
       const labelWidth = numberingFont.widthOfTextAtSize(label, size);

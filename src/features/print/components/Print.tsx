@@ -8,6 +8,7 @@ import { getOrientationBasedSize } from '../utils/print';
 
 export interface PrintProps {
   children: JSX.Element;
+  compatibility?: boolean;
   paperSize?: DataType.PageSize | [number, number];
   paperOrientation?: 'landscape' | 'portrait';
   contentMarginLeft?: number;
@@ -17,6 +18,7 @@ export interface PrintProps {
 }
 
 const DEFAULT_PROPS = {
+  compatibility: false,
   paperSize: 'A4',
   paperOrientation: 'portrait',
   contentMarginLeft: 2.25,
@@ -34,11 +36,19 @@ export default function Print(props: PrintProps) {
     return getOrientationBasedSize(paperSize, finalProps.paperOrientation);
   });
 
-  const contentAspectRatio = createMemo(() => {
-    const contentWidth = finalPaperSize().width - finalProps.contentMarginLeft - finalProps.contentMarginRight;
-    const contentHeight = finalPaperSize().height - finalProps.contentMarginTop - finalProps.contentMarginBottom;
-    return contentWidth / contentHeight;
-  });
+  const contentSize = createMemo(() => ({
+    width: finalPaperSize().width - finalProps.contentMarginLeft - finalProps.contentMarginRight,
+    height: finalPaperSize().height - finalProps.contentMarginTop - finalProps.contentMarginBottom,
+  }));
+  const contentAspectRatio = createMemo(() => contentSize().width / contentSize().height);
+  const paperAspectRatio = createMemo(() => finalPaperSize().width / finalPaperSize().height);
+  const contentInset = createMemo(() => ({
+    left: finalProps.contentMarginLeft / finalPaperSize().width,
+    top: finalProps.contentMarginTop / finalPaperSize().height,
+    width: contentSize().width / finalPaperSize().width,
+    height: contentSize().height / finalPaperSize().height,
+  }));
+  const marginBottomFraction = createMemo(() => finalProps.contentMarginBottom / finalPaperSize().height);
   let printPortal: HTMLDivElement | undefined;
   onMount(() => {
     if (printPortal) {
@@ -54,7 +64,9 @@ export default function Print(props: PrintProps) {
               ? `${finalProps.paperSize} ${finalProps.paperOrientation}`
               : // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 `${finalPaperSize().width}cm ${finalPaperSize().height}cm`) as any,
-            margin: `${finalProps.contentMarginTop}cm ${finalProps.contentMarginRight}cm ${finalProps.contentMarginBottom}cm ${finalProps.contentMarginLeft}cm`,
+            margin: finalProps.compatibility
+              ? '0'
+              : `${finalProps.contentMarginTop}cm ${finalProps.contentMarginRight}cm ${finalProps.contentMarginBottom}cm ${finalProps.contentMarginLeft}cm`,
           },
           body: {
             '& > *:not(.print)': {
@@ -69,10 +81,22 @@ export default function Print(props: PrintProps) {
               },
             },
           },
+          // 首页不强制分页，避免部分引擎产生空白首页
+          '.print .PrintPaper + .PrintPaper': {
+            breakBefore: 'page',
+          },
         }}
       />
       <Portal ref={printPortal}>
-        <PrintPaperConfigProvider contentAspectRatio={contentAspectRatio()}>{props.children}</PrintPaperConfigProvider>
+        <PrintPaperConfigProvider
+          compatibility={finalProps.compatibility}
+          contentAspectRatio={contentAspectRatio()}
+          paperAspectRatio={paperAspectRatio()}
+          contentInset={contentInset()}
+          marginBottomFraction={marginBottomFraction()}
+        >
+          {props.children}
+        </PrintPaperConfigProvider>
       </Portal>
     </>
   );

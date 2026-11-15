@@ -1,5 +1,5 @@
 import { Box } from '@suid/material';
-import { Index, Show } from 'solid-js';
+import { Index } from 'solid-js';
 import type { PrintDocument, PrintImageAssets } from '@/domain/print';
 import { Print, PrintPaper } from '@/features/print';
 import PageItems from '@/features/print/components/PageItems';
@@ -7,7 +7,9 @@ import PageItems from '@/features/print/components/PageItems';
 interface SPPrintProps {
   document: PrintDocument;
   assets: PrintImageAssets;
-  numberingEnabled: boolean;
+  compatibility: boolean;
+  imageNumberingEnabled: boolean;
+  pageNumberingEnabled: boolean;
 }
 
 export default function SPPrint(props: SPPrintProps) {
@@ -17,6 +19,7 @@ export default function SPPrint(props: SPPrintProps) {
 
   return (
     <Print
+      compatibility={props.compatibility}
       paperOrientation={orientation()}
       paperSize={[props.document.paper.width, props.document.paper.height]}
       contentMarginLeft={props.document.margins.left}
@@ -26,32 +29,24 @@ export default function SPPrint(props: SPPrintProps) {
     >
       <Index each={props.document.pages}>
         {(page, index) => (
-          <PrintPaper>
+          <PrintPaper
+            footer={
+              props.pageNumberingEnabled ? (
+                <Box sx={{ fontSize: 10, lineHeight: 1.2, color: '#000' }}>
+                  {index + 1} / {props.document.pages.length}
+                </Box>
+              ) : undefined
+            }
+          >
             <PageItems
               page={page()}
               content={{ width: props.document.contentRect.width, height: props.document.contentRect.height }}
               assets={props.assets}
               mode="print"
               selectedIds={[]}
-              numberingEnabled={props.numberingEnabled}
+              numberingEnabled={props.imageNumberingEnabled}
               numberingStart={numberingStartAt(index)}
             />
-            <Show when={props.numberingEnabled}>
-              <Box
-                sx={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  textAlign: 'center',
-                  fontSize: 10,
-                  lineHeight: 1.2,
-                  bgcolor: 'rgba(255, 255, 255, 0.82)',
-                }}
-              >
-                {index + 1} / {props.document.pages.length}
-              </Box>
-            </Show>
           </PrintPaper>
         )}
       </Index>

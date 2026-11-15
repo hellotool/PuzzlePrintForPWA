@@ -1,8 +1,10 @@
+import FileDownloadOutlinedIcon from '@suid/icons-material/FileDownloadOutlined';
 import PhotoLibraryOutlinedIcon from '@suid/icons-material/PhotoLibraryOutlined';
-import { Box, Button, Paper, ThemeProvider, Typography, useTheme } from '@suid/material';
-import { createMemo, Show } from 'solid-js';
+import { alpha, Box, Button, Paper, ThemeProvider, Typography, useTheme } from '@suid/material';
+import { createMemo, createSignal, Show } from 'solid-js';
 import type { PrintDocument, PrintImageAssets } from '@/domain/print';
 import PrintEditor from '@/features/print/editor/PrintEditor';
+import { hasExternalFiles } from '@/features/print/utils/drag';
 import { usePreferredDarkMode } from '@/shared/hooks/usePreferredDarkMode';
 import { createAppTheme } from '@/shared/themes/appTheme';
 
@@ -11,7 +13,8 @@ interface MainAreaProps {
   assets: PrintImageAssets;
   colorMode: 'colorful' | 'gray';
   lightMode: boolean;
-  numberingEnabled: boolean;
+  imageNumberingEnabled: boolean;
+  pageNumberingEnabled: boolean;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onUpdateDocument: (document: PrintDocument) => void;
@@ -21,12 +24,14 @@ interface MainAreaProps {
   onUndo: () => void;
   onRedo: () => void;
   onAddImages: () => void;
+  onAddImageFiles: (files: FileList | readonly File[]) => void;
   onDragStateChange?: (dragging: boolean) => void;
 }
 
 export default function MainArea(props: MainAreaProps) {
   const theme = useTheme();
   const isPreferredDark = usePreferredDarkMode();
+  const [fileDragDepth, setFileDragDepth] = createSignal(0);
   const editorTheme = createMemo(() => {
     if (isPreferredDark() && props.lightMode) {
       return createAppTheme({ isDarkMode: false });
@@ -34,10 +39,38 @@ export default function MainArea(props: MainAreaProps) {
     return theme;
   });
 
+  function handleDragEnter(event: DragEvent) {
+    if (!hasExternalFiles(event.dataTransfer)) return;
+    setFileDragDepth((depth) => depth + 1);
+  }
+
+  function handleDragOver(event: DragEvent) {
+    if (!hasExternalFiles(event.dataTransfer) || !event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }
+
+  function handleDragLeave(event: DragEvent) {
+    if (!hasExternalFiles(event.dataTransfer)) return;
+    setFileDragDepth((depth) => Math.max(0, depth - 1));
+  }
+
+  function handleDrop(event: DragEvent) {
+    if (!hasExternalFiles(event.dataTransfer) || !event.dataTransfer) return;
+    event.preventDefault();
+    setFileDragDepth(0);
+    props.onAddImageFiles(event.dataTransfer.files);
+  }
+
   return (
     <Box
       component="main"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       sx={{
+        position: 'relative',
         height: '100%',
         minHeight: 0,
         display: 'flex',
@@ -73,7 +106,7 @@ export default function MainArea(props: MainAreaProps) {
               <PhotoLibraryOutlinedIcon color="primary" fontSize="large" />
               <Typography variant="h6">把图片放到纸上</Typography>
               <Typography variant="body2" color="text.secondary">
-                添加图片后，应用会按网格拼到纸上；拖动图片可以调整顺序。
+                选择、粘贴或直接把图片文件拖进来，应用会按网格拼到纸上；拖动图片可以调整顺序。
               </Typography>
               <Show when={props.onAddImages}>
                 <Button variant="contained" onClick={props.onAddImages}>
@@ -89,7 +122,8 @@ export default function MainArea(props: MainAreaProps) {
             document={props.document}
             assets={props.assets}
             colorMode={props.colorMode}
-            numberingEnabled={props.numberingEnabled}
+            imageNumberingEnabled={props.imageNumberingEnabled}
+            pageNumberingEnabled={props.pageNumberingEnabled}
             selectedIds={props.selectedIds}
             onSelectionChange={props.onSelectionChange}
             onUpdateDocument={props.onUpdateDocument}
@@ -102,6 +136,29 @@ export default function MainArea(props: MainAreaProps) {
             onDragStateChange={props.onDragStateChange}
           />
         </ThemeProvider>
+      </Show>
+      <Show when={fileDragDepth() > 0}>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 8,
+            zIndex: 6,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            borderRadius: 2,
+            border: '2px dashed',
+            borderColor: 'primary.main',
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            color: 'primary.main',
+            pointerEvents: 'none',
+          }}
+        >
+          <FileDownloadOutlinedIcon fontSize="large" />
+          <Typography variant="h6">松开以添加图片</Typography>
+        </Box>
       </Show>
     </Box>
   );

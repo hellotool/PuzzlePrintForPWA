@@ -17,6 +17,7 @@ function createDefaultConfig(): ConfigStore {
       rows: 1,
     },
     print: {
+      compatibility: true,
       contentMarginPreset: 'default',
       contentMarginLeft: 0.5,
       contentMarginTop: 1,
@@ -30,7 +31,8 @@ function createDefaultConfig(): ConfigStore {
       lightMode: false,
     },
     numbering: {
-      enabled: false,
+      imageEnabled: false,
+      pageEnabled: false,
     },
   };
 }
@@ -42,11 +44,16 @@ function loadStoredConfig(): ConfigStore {
     const raw = sessionStorage.getItem(CONFIG_STORAGE_KEY);
     if (!raw) return defaults;
     const stored = JSON.parse(raw) as Partial<ConfigStore>;
+    // 旧版配置只有 numbering.enabled，迁移为图片序号与页码两个开关
+    const storedNumbering = (stored.numbering ?? {}) as Partial<NumberingConfig> & { enabled?: boolean };
     return {
       layout: { ...defaults.layout, ...stored.layout },
       print: { ...defaults.print, ...stored.print },
       preview: { ...defaults.preview, ...stored.preview },
-      numbering: { ...defaults.numbering, ...stored.numbering },
+      numbering: {
+        imageEnabled: storedNumbering.imageEnabled ?? storedNumbering.enabled ?? defaults.numbering.imageEnabled,
+        pageEnabled: storedNumbering.pageEnabled ?? storedNumbering.enabled ?? defaults.numbering.pageEnabled,
+      },
     };
   } catch {
     return defaults;
@@ -63,6 +70,7 @@ export interface ConfigActions {
     setRows: (rows: number) => void;
   };
   print: {
+    toggleCompatibility: () => void;
     setMarginPreset: (value: 'default' | 'custom') => void;
     setMarginLeft: (value: number) => void;
     setMarginTop: (value: number) => void;
@@ -77,7 +85,8 @@ export interface ConfigActions {
     toggleLightMode: () => void;
   };
   numbering: {
-    toggle: () => void;
+    toggleImage: () => void;
+    togglePage: () => void;
   };
 }
 
@@ -94,6 +103,9 @@ export function createConfigActions(setState: SetStoreFunction<ConfigStore>): Co
     },
 
     print: {
+      toggleCompatibility: () => {
+        setState('print', 'compatibility', (prev) => !prev);
+      },
       setMarginPreset: (preset) => {
         setState('print', 'contentMarginPreset', preset);
       },
@@ -139,8 +151,11 @@ export function createConfigActions(setState: SetStoreFunction<ConfigStore>): Co
     },
 
     numbering: {
-      toggle: () => {
-        setState('numbering', 'enabled', (prev) => !prev);
+      toggleImage: () => {
+        setState('numbering', 'imageEnabled', (prev) => !prev);
+      },
+      togglePage: () => {
+        setState('numbering', 'pageEnabled', (prev) => !prev);
       },
     },
   };

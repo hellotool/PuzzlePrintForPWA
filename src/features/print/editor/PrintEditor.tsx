@@ -17,7 +17,8 @@ interface PrintEditorProps {
   document: PrintDocument;
   assets: PrintImageAssets;
   colorMode: 'colorful' | 'gray';
-  numberingEnabled: boolean;
+  imageNumberingEnabled: boolean;
+  pageNumberingEnabled: boolean;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onUpdateDocument: (document: PrintDocument) => void;
@@ -30,6 +31,16 @@ interface PrintEditorProps {
   onDragStateChange?: (dragging: boolean) => void;
 }
 
+export interface DragStartInfo {
+  itemIds: string[];
+  url: string;
+  name: string;
+  type?: string;
+  rotation: number;
+  width: number;
+  height: number;
+}
+
 interface DragState {
   itemId: string;
   itemIds: string[];
@@ -39,16 +50,6 @@ interface DragState {
   lastClientX: number;
   lastClientY: number;
   insertIndex: number;
-}
-
-interface DragGhost {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  rotation: number;
-  url: string;
-  count: number;
 }
 
 const runningAnimations = new WeakMap<HTMLElement, Animation>();
@@ -99,11 +100,11 @@ function sameItemOrder(a: PrintDocument, b: PrintDocument) {
 export default function PrintEditor(props: PrintEditorProps) {
   let scrollerRef: HTMLDivElement | undefined;
   let dragState: DragState | null = null;
+  let dragDropped = false;
   let scrollFrame = 0;
   let flipFrame = 0;
   const [previewDocument, setPreviewDocument] = createSignal<PrintDocument | null>(null);
   const [draggingIds, setDraggingIds] = createSignal<string[]>([]);
-  const [dragGhost, setDragGhost] = createSignal<DragGhost | null>(null);
 
   const activeDocument = () => previewDocument() ?? props.document;
   const capacity = () => Math.max(1, props.document.layout.columns * props.document.layout.rows);
@@ -166,18 +167,6 @@ export default function PrintEditor(props: PrintEditorProps) {
     return null;
   }
 
-  function updateGhost(clientX: number, clientY: number) {
-    const state = dragState;
-    if (!state) return;
-    const current = dragGhost();
-    if (!current) return;
-    setDragGhost({
-      ...current,
-      left: clientX - state.width / 2,
-      top: clientY - state.height / 2,
-    });
-  }
-
   function applyPreview(index: number) {
     const state = dragState;
     if (!state || index === state.insertIndex) return;
@@ -185,10 +174,10 @@ export default function PrintEditor(props: PrintEditorProps) {
     reorderItemsToIndex(state.itemIds, index);
   }
 
-  function handleDragStart(itemId: string, clientX: number, clientY: number) {
+  function handleDragStart(itemId: string, clientX: number, clientY: number): DragStartInfo | undefined {
     const flattened = props.document.pages.flatMap((page) => page.items);
     const item = flattened.find((value) => value.id === itemId);
-    if (!item) return;
+    if (!item) return undefined;
     const existingIds = new Set(flattened.map((value) => value.id));
     const selected = props.selectedIds.filter((id) => existingIds.has(id));
     const itemIds = selected.includes(itemId) && selected.length > 1 ? selected : [itemId];
@@ -210,8 +199,10 @@ export default function PrintEditor(props: PrintEditorProps) {
       contentRect && props.document.contentRect.height > 0
         ? (item.frame.height / props.document.contentRect.height) * contentRect.height
         : (sourceRect?.height ?? 96);
+    const asset = props.assets[item.imageKey];
 
     const initialIndex = resolveInsertIndex(clientX, clientY);
+    dragDropped = false;
     dragState = {
       itemId,
       itemIds,
@@ -223,27 +214,30 @@ export default function PrintEditor(props: PrintEditorProps) {
       insertIndex: initialIndex ?? -1,
     };
     setDraggingIds(itemIds);
-    setDragGhost({
-      left: clientX - width / 2,
-      top: clientY - height / 2,
-      width,
-      height,
-      rotation: item.rotation,
-      url: props.assets[item.imageKey]?.url ?? '',
-      count: itemIds.length,
-    });
     props.onBeginTransaction();
     props.onDragStateChange?.(true);
     startAutoScroll();
+    return {
+      itemIds,
+      url: asset?.url ?? '',
+      name: asset?.name ?? '',
+      type: asset?.type,
+      rotation: item.rotation,
+      width,
+      height,
+    };
   }
 
   function handleDragMove(clientX: number, clientY: number) {
     if (!dragState) return;
     dragState.lastClientX = clientX;
     dragState.lastClientY = clientY;
-    updateGhost(clientX, clientY);
     const index = resolveInsertIndex(clientX, clientY);
     if (index !== null) applyPreview(index);
+  }
+
+  function handleDragDrop() {
+    dragDropped = true;
   }
 
   function handleDragEnd(clientX: number, clientY: number) {
@@ -251,7 +245,7 @@ export default function PrintEditor(props: PrintEditorProps) {
       dragState.lastClientX = clientX;
       dragState.lastClientY = clientY;
     }
-    finishDrag(true);
+    finishDrag(dragDropped);
   }
 
   function finishDrag(commit: boolean) {
@@ -278,7 +272,6 @@ export default function PrintEditor(props: PrintEditorProps) {
     }
     setPreviewDocument(null);
     setDraggingIds([]);
-    setDragGhost(null);
     props.onDragStateChange?.(false);
   }
 
@@ -381,7 +374,8 @@ export default function PrintEditor(props: PrintEditorProps) {
             page={page()}
             pageNumber={index + 1}
             pageCount={activeDocument().pages.length}
-            numberingEnabled={props.numberingEnabled}
+            imageNumberingEnabled={props.imageNumberingEnabled}
+            pageNumberingEnabled={props.pageNumberingEnabled}
             numberingStart={numberingStartAt(index)}
             assets={props.assets}
             colorMode={props.colorMode}
@@ -391,6 +385,7 @@ export default function PrintEditor(props: PrintEditorProps) {
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
+            onDragDrop={handleDragDrop}
             onDragCancel={() => finishDrag(false)}
             onDeleteSelected={deleteSelected}
             canMoveUp={index > 0}
@@ -428,58 +423,6 @@ export default function PrintEditor(props: PrintEditorProps) {
             第 {activeDocument().pages.length + 1} 页
           </Typography>
         </Box>
-      </Show>
-      <Show when={dragGhost()}>
-        {(ghost) => (
-          <Box
-            data-print-drag-ghost="true"
-            sx={{
-              position: 'fixed',
-              left: ghost().left,
-              top: ghost().top,
-              width: ghost().width,
-              height: ghost().height,
-              transform: `rotate(${ghost().rotation}deg)`,
-              pointerEvents: 'none',
-              zIndex: 1300,
-            }}
-          >
-            <Box
-              component="img"
-              src={ghost().url}
-              alt=""
-              draggable={false}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                opacity: 0.9,
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
-              }}
-            />
-            <Show when={ghost().count > 1}>
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  minWidth: 20,
-                  px: 0.75,
-                  py: 0.25,
-                  borderRadius: 10,
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  lineHeight: 1.5,
-                  textAlign: 'center',
-                }}
-              >
-                {ghost().count}
-              </Box>
-            </Show>
-          </Box>
-        )}
       </Show>
     </Box>
   );

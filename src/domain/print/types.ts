@@ -46,6 +46,7 @@ export interface PrintDocument {
 export interface PrintImageAsset {
   url: string;
   name: string;
+  type?: string;
 }
 
 export type PrintImageAssets = Record<string, PrintImageAsset>;

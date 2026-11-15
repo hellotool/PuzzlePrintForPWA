@@ -1,6 +1,7 @@
 import LightbulbOutlinedIcon from '@suid/icons-material/LightbulbOutlined';
 import PaletteOutlinedIcon from '@suid/icons-material/PaletteOutlined';
 import AddIcon from '@suid/icons-material/Add';
+import CloseIcon from '@suid/icons-material/Close';
 import RemoveIcon from '@suid/icons-material/Remove';
 import {
   Box,
@@ -75,7 +76,12 @@ function Stepper(props: { label: string; value: number; onChange: (value: number
   );
 }
 
-export default function SettingsPanel() {
+interface SettingsPanelProps {
+  onClose?: () => void;
+  showCloseButton?: boolean;
+}
+
+export default function SettingsPanel(props: SettingsPanelProps) {
   const { state: config, actions: configActions } = useConfig();
   const isPreferredDark = usePreferredDarkMode();
 
@@ -100,114 +106,142 @@ export default function SettingsPanel() {
   }
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto' }}>
-      <Toolbar>
+    <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Toolbar variant="dense" sx={{ flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
         <ToolbarTitle>选项</ToolbarTitle>
+        <Show when={props.onClose && (props.showCloseButton ?? true)}>
+          <IconButton size="small" aria-label="关闭选项面板" onClick={props.onClose}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Show>
       </Toolbar>
 
-      <List>
-        <ListSubheader>版面</ListSubheader>
-        <SettingListItem label="列数">
-          <Stepper
-            label="列数"
-            value={config.layout.columns}
-            onChange={(value) => configActions.layout.setColumns(Math.max(1, value))}
-          />
-        </SettingListItem>
-        <SettingListItem label="行数">
-          <Stepper
-            label="行数"
-            value={config.layout.rows}
-            onChange={(value) => configActions.layout.setRows(Math.max(1, value))}
-          />
-        </SettingListItem>
-      </List>
+      <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'auto' }}>
+        <List>
+          <ListSubheader>版面</ListSubheader>
+          <SettingListItem label="列数">
+            <Stepper
+              label="列数"
+              value={config.layout.columns}
+              onChange={(value) => configActions.layout.setColumns(Math.max(1, value))}
+            />
+          </SettingListItem>
+          <SettingListItem label="行数">
+            <Stepper
+              label="行数"
+              value={config.layout.rows}
+              onChange={(value) => configActions.layout.setRows(Math.max(1, value))}
+            />
+          </SettingListItem>
+        </List>
 
-      <Divider />
+        <Divider />
 
-      <List>
-        <ListSubheader>纸张</ListSubheader>
-        <SettingListItem label="纸张尺寸">
-          <FormControl size="small" sx={{ minWidth: 136 }}>
-            <Select
-              value={typeof config.print.size === 'string' ? config.print.size : 'custom'}
-              onChange={handlePageSizeChange}
-              inputProps={{ 'aria-label': '纸张尺寸' }}
+        <List>
+          <ListSubheader>纸张</ListSubheader>
+          <SettingListItem label="纸张尺寸">
+            <FormControl size="small" sx={{ minWidth: 136 }}>
+              <Select
+                value={typeof config.print.size === 'string' ? config.print.size : 'custom'}
+                onChange={handlePageSizeChange}
+                inputProps={{ 'aria-label': '纸张尺寸' }}
+              >
+                <For each={getAvailablePageSizes()}>{(size) => <MenuItem value={size}>{size}</MenuItem>}</For>
+                <MenuItem value="custom" disabled>
+                  自定义
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </SettingListItem>
+          <SettingListItem label="方向">
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={config.print.orientation}
+              onChange={handleOrientationChange}
+              aria-label="纸张方向"
             >
-              <For each={getAvailablePageSizes()}>{(size) => <MenuItem value={size}>{size}</MenuItem>}</For>
-              <MenuItem value="custom" disabled>
-                自定义
-              </MenuItem>
-            </Select>
-          </FormControl>
-        </SettingListItem>
-        <SettingListItem label="方向">
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={config.print.orientation}
-            onChange={handleOrientationChange}
-            aria-label="纸张方向"
-          >
-            <ToggleButton value="portrait">纵向</ToggleButton>
-            <ToggleButton value="landscape">横向</ToggleButton>
-          </ToggleButtonGroup>
-        </SettingListItem>
-        <SettingListItem label="页边距">
-          <FormControl size="small" sx={{ minWidth: 112 }}>
-            <Select
-              value={config.print.contentMarginPreset}
-              onChange={handleMarginPresetChange}
-              inputProps={{ 'aria-label': '页边距' }}
-            >
-              <MenuItem value="default">默认</MenuItem>
-              <MenuItem value="custom">自定义</MenuItem>
-            </Select>
-          </FormControl>
-        </SettingListItem>
-        <Show when={config.print.contentMarginPreset === 'custom'}>
-          <CustomMarginItems />
-          <ListItem>
-            <ListItemText secondary="自定义边距" />
-            <Button size="small" onClick={() => configActions.print.resetMargins()}>
-              恢复默认
-            </Button>
-          </ListItem>
-        </Show>
-      </List>
+              <ToggleButton value="portrait">纵向</ToggleButton>
+              <ToggleButton value="landscape">横向</ToggleButton>
+            </ToggleButtonGroup>
+          </SettingListItem>
+          <SettingListItem label="页边距">
+            <FormControl size="small" sx={{ minWidth: 112 }}>
+              <Select
+                value={config.print.contentMarginPreset}
+                onChange={handleMarginPresetChange}
+                inputProps={{ 'aria-label': '页边距' }}
+              >
+                <MenuItem value="default">默认</MenuItem>
+                <MenuItem value="custom">自定义</MenuItem>
+              </Select>
+            </FormControl>
+          </SettingListItem>
+          <Show when={config.print.contentMarginPreset === 'custom'}>
+            <CustomMarginItems />
+            <ListItem>
+              <ListItemText secondary="自定义边距" />
+              <Button size="small" onClick={() => configActions.print.resetMargins()}>
+                恢复默认
+              </Button>
+            </ListItem>
+          </Show>
+        </List>
 
-      <Divider />
+        <Divider />
 
-      <List>
-        <ListSubheader>打印</ListSubheader>
-        <ListSwitchItem
-          checked={config.numbering.enabled}
-          onClick={() => configActions.numbering.toggle()}
-          title="页码与序号"
-          summary="在图片左下角和纸张页脚显示数字"
-        />
-      </List>
-
-      <Divider />
-
-      <List>
-        <ListSubheader>预览</ListSubheader>
-        <ListSwitchItem
-          checked={config.preview.colorMode === 'gray'}
-          icon={<PaletteOutlinedIcon />}
-          onClick={handleGrayToggle}
-          title="灰度预览"
-          summary="仅影响屏幕显示，不影响打印"
-        />
-        <Show when={isPreferredDark()}>
+        <List>
+          <ListSubheader>打印</ListSubheader>
           <ListSwitchItem
-            checked={config.preview.lightMode}
-            icon={<LightbulbOutlinedIcon />}
-            onClick={() => configActions.preview.toggleLightMode()}
-            title="亮色预览"
+            checked={config.print.compatibility}
+            onClick={() => configActions.print.toggleCompatibility()}
+            title="兼容打印"
+            summary={
+              config.print.compatibility
+                ? '由应用绘制页边距与页码，输出与预览一致'
+                : '由浏览器绘制边距与页脚，请在打印对话框中设置'
+            }
           />
-        </Show>
-      </List>
+          <ListSwitchItem
+            checked={config.numbering.imageEnabled}
+            onClick={() => configActions.numbering.toggleImage()}
+            title="图片序号"
+            summary="在每张图片左下角显示序号"
+          />
+          <ListSwitchItem
+            checked={config.numbering.pageEnabled}
+            disabled={!config.print.compatibility}
+            onClick={() => configActions.numbering.togglePage()}
+            title="页码"
+            summary={
+              config.print.compatibility
+                ? '在纸张页脚显示「当前页 / 总页数」'
+                : '仅在兼容打印开启时生效，当前由浏览器绘制页码'
+            }
+          />
+        </List>
+
+        <Divider />
+
+        <List>
+          <ListSubheader>预览</ListSubheader>
+          <ListSwitchItem
+            checked={config.preview.colorMode === 'gray'}
+            icon={<PaletteOutlinedIcon />}
+            onClick={handleGrayToggle}
+            title="灰度预览"
+            summary="仅影响屏幕显示，不影响打印"
+          />
+          <Show when={isPreferredDark()}>
+            <ListSwitchItem
+              checked={config.preview.lightMode}
+              icon={<LightbulbOutlinedIcon />}
+              onClick={() => configActions.preview.toggleLightMode()}
+              title="亮色预览"
+            />
+          </Show>
+        </List>
+      </Box>
     </Box>
   );
 }
