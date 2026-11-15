@@ -22,12 +22,6 @@ interface PaperSurfaceProps {
   onPointerCancel?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
   onLostPointerCapture?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
   onKeyDown?: JSX.EventHandlerUnion<HTMLDivElement, KeyboardEvent>;
-  onDragStart?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
-  onDrag?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
-  onDragEnd?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
-  onDragEnter?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
-  onDragOver?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
-  onDrop?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
 }
 
 export default function PaperSurface(props: PaperSurfaceProps) {
@@ -60,12 +54,6 @@ export default function PaperSurface(props: PaperSurfaceProps) {
         onPointerCancel={props.onPointerCancel}
         onLostPointerCapture={props.onLostPointerCapture}
         onKeyDown={props.onKeyDown}
-        onDragStart={props.onDragStart}
-        onDrag={props.onDrag}
-        onDragEnd={props.onDragEnd}
-        onDragEnter={props.onDragEnter}
-        onDragOver={props.onDragOver}
-        onDrop={props.onDrop}
         sx={{
           position: 'absolute',
           left: `${(props.contentRect.x / props.paper.width) * 100}%`,

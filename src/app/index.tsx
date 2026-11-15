@@ -1,12 +1,7 @@
 import '@/shared/styles/index.scss';
-import { polyfill } from 'mobile-drag-drop';
 import { render } from 'solid-js/web';
 import { isServiceWorkerSupported } from '@/shared/utils/platform';
 import { App } from './App';
-
-// 触摸设备把 touch 翻译成标准 drag 事件，复用同一套原生拖拽处理器；
-// holdToDrag 保证快速滑动仍是滚动、长按才发起拖拽，桌面鼠标不受影响。
-polyfill({ holdToDrag: 250, dragImageCenterOnTouch: true });
 
 document.documentElement.lang = 'zh-CN';
 

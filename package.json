@@ -49,7 +49,6 @@
     "@suid/types": "^0.8.0",
     "@tauri-apps/api": "^2.12.1",
     "es-toolkit": "^1.52.0",
-    "mobile-drag-drop": "2.2.0",
     "nanoid": "^6.0.1",
     "pdf-lib": "^1.17.1",
     "solid-js": "^1.9.15",

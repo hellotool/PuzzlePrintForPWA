@@ -1,11 +1,5 @@
-export const PRINT_ITEMS_MIME = 'application/x-hatu-print-items';
-
-export function hasPrintItems(dataTransfer: DataTransfer | null): boolean {
-  return !!dataTransfer && dataTransfer.types.includes(PRINT_ITEMS_MIME);
-}
-
 export function hasExternalFiles(dataTransfer: DataTransfer | null): boolean {
-  return !!dataTransfer && dataTransfer.types.includes('Files') && !hasPrintItems(dataTransfer);
+  return !!dataTransfer && dataTransfer.types.includes('Files');
 }
 
 export function setDownloadUrl(dataTransfer: DataTransfer, image: { url: string; name: string; type?: string }): void {
