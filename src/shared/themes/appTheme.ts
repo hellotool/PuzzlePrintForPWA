@@ -4,10 +4,15 @@ import { createMemo } from 'solid-js';
 import { usePreferredDarkMode } from '../hooks/usePreferredDarkMode';
 
 interface AppThemeOptions {
-  isDarkMode?: boolean;
+  isDarkMode?: boolean | (() => boolean);
 }
 export function createAppTheme(options?: AppThemeOptions) {
-  const isDarkMode = options?.isDarkMode !== undefined ? () => Boolean(options.isDarkMode) : usePreferredDarkMode();
+  const isDarkMode =
+    typeof options?.isDarkMode === 'function'
+      ? options.isDarkMode
+      : options?.isDarkMode !== undefined
+        ? () => Boolean(options.isDarkMode)
+        : usePreferredDarkMode();
   return createTheme({
     palette: createMemo(() => {
       if (!isDarkMode()) {

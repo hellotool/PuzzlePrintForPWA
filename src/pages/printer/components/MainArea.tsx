@@ -1,7 +1,7 @@
 import FileDownloadOutlinedIcon from '@suid/icons-material/FileDownloadOutlined';
 import PhotoLibraryOutlinedIcon from '@suid/icons-material/PhotoLibraryOutlined';
 import { alpha, Box, Button, Paper, ThemeProvider, Typography, useTheme } from '@suid/material';
-import { createMemo, createSignal, Show } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import type { PrintDocument, PrintImageAssets } from '@/domain/print';
 import PrintEditor from '@/features/print/editor/PrintEditor';
 import { hasExternalFiles } from '@/features/print/utils/drag';
@@ -32,12 +32,9 @@ export default function MainArea(props: MainAreaProps) {
   const theme = useTheme();
   const isPreferredDark = usePreferredDarkMode();
   const [fileDragDepth, setFileDragDepth] = createSignal(0);
-  const editorTheme = createMemo(() => {
-    if (isPreferredDark() && props.lightMode) {
-      return createAppTheme({ isDarkMode: false });
-    }
-    return theme;
-  });
+  // 稳定主题对象 + 响应式 isDarkMode：SUID styled 只订阅首见主题对象的 palette 信号，
+  // 运行时换主题对象不会重样式，故亮色预览必须走同一对象内的 palette 变化。
+  const editorTheme = createAppTheme({ isDarkMode: () => isPreferredDark() && !props.lightMode });
 
   function handleDragEnter(event: DragEvent) {
     if (!hasExternalFiles(event.dataTransfer)) return;
@@ -117,7 +114,7 @@ export default function MainArea(props: MainAreaProps) {
           </Box>
         }
       >
-        <ThemeProvider theme={editorTheme()}>
+        <ThemeProvider theme={editorTheme}>
           <PrintEditor
             document={props.document}
             assets={props.assets}

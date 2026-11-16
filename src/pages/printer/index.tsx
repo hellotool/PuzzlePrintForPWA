@@ -6,6 +6,7 @@ import { buildGridDocument, removeItemsFromDocument, rotateItems } from '@/domai
 import AboutDialog from '@/features/about';
 import { createPrintDocumentStore } from '@/features/print/editor/stores/createPrintDocumentStore';
 import { exportPrintDocumentPdf } from '@/features/print/export/exportPdf';
+import { withFlip } from '@/features/print/utils/flip';
 import { usePasteImage } from '@/shared/hooks/usePasteImage';
 import { pickFiles } from '@/shared/utils/file';
 import ActionBar from './components/ActionBar';
@@ -117,7 +118,7 @@ function PrinterPageContent() {
   function removeSelected() {
     if (selectedIds().length === 0) return;
     documentStore.beginTransaction();
-    documentStore.update(removeItemsFromDocument(documentStore.document(), selectedIds()));
+    withFlip(() => documentStore.update(removeItemsFromDocument(documentStore.document(), selectedIds())));
     documentStore.commitTransaction();
     setSelectedIds([]);
   }

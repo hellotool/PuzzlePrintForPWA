@@ -69,6 +69,10 @@ export default function Print(props: PrintProps) {
               : `${finalProps.contentMarginTop}cm ${finalProps.contentMarginRight}cm ${finalProps.contentMarginBottom}cm ${finalProps.contentMarginLeft}cm`,
           },
           body: {
+            // 纸张不应带上应用/body 的背景色（背景图形开启时会被打印）
+            '@media print': {
+              background: '#fff',
+            },
             '& > *:not(.print)': {
               '@media print': {
                 display: 'none',

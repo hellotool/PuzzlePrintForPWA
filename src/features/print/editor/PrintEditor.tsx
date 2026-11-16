@@ -11,6 +11,7 @@ import {
   type PrintImageAssets,
 } from '@/domain/print';
 import EditorPage from './EditorPage';
+import { cancelFlip, withFlip } from '../utils/flip';
 
 interface PrintEditorProps {
   document: PrintDocument;
@@ -57,6 +58,7 @@ interface MarqueeGesture {
   startY: number;
   lastX: number;
   lastY: number;
+  moved: boolean;
   baseIds: string[];
 }
 
@@ -65,41 +67,6 @@ interface MarqueeRect {
   y: number;
   width: number;
   height: number;
-}
-
-const runningAnimations = new WeakMap<HTMLElement, Animation>();
-
-function captureItemRects() {
-  const rects = new Map<string, DOMRect>();
-  document.querySelectorAll<HTMLElement>('[data-print-item-id]').forEach((element) => {
-    const id = element.dataset.printItemId;
-    if (id) rects.set(id, element.getBoundingClientRect());
-  });
-  return rects;
-}
-
-function animateItemRects(previous: Map<string, DOMRect>) {
-  if (typeof document === 'undefined') return;
-  document.querySelectorAll<HTMLElement>('[data-print-item-id]').forEach((element) => {
-    const id = element.dataset.printItemId;
-    const before = id ? previous.get(id) : undefined;
-    if (!before || typeof element.animate !== 'function') return;
-    const after = element.getBoundingClientRect();
-    const deltaX = before.left - after.left;
-    const deltaY = before.top - after.top;
-    if (deltaX === 0 && deltaY === 0) return;
-    runningAnimations.get(element)?.cancel();
-    const animation = element.animate([{ translate: `${deltaX}px ${deltaY}px` }, { translate: '0px 0px' }], {
-      duration: 180,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-    });
-    runningAnimations.set(element, animation);
-    animation.addEventListener('finish', () => {
-      if (runningAnimations.get(element) === animation) {
-        runningAnimations.delete(element);
-      }
-    });
-  });
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -122,7 +89,6 @@ export default function PrintEditor(props: PrintEditorProps) {
   let lastScrollTop = 0;
   let lastScrollLeft = 0;
   let scrollFrame = 0;
-  let flipFrame = 0;
   const [previewDocument, setPreviewDocument] = createSignal<PrintDocument | null>(null);
   const [draggingIds, setDraggingIds] = createSignal<string[]>([]);
   const [marquee, setMarquee] = createSignal<MarqueeRect | null>(null);
@@ -141,13 +107,11 @@ export default function PrintEditor(props: PrintEditorProps) {
   }
 
   function reorderItemsToIndex(itemIds: string[], toIndex: number) {
-    const previous = captureItemRects();
-    setPreviewDocument(moveItemsToIndex(props.document, itemIds, toIndex));
-    if (flipFrame !== 0) cancelAnimationFrame(flipFrame);
-    flipFrame = requestAnimationFrame(() => {
-      flipFrame = 0;
-      animateItemRects(previous);
-    });
+    withFlip(() => setPreviewDocument(moveItemsToIndex(props.document, itemIds, toIndex)));
+  }
+
+  function updateWithFlip(next: PrintDocument) {
+    withFlip(() => props.onUpdateDocument(next));
   }
 
   function totalItemCount() {
@@ -289,10 +253,7 @@ export default function PrintEditor(props: PrintEditorProps) {
     dragState = null;
     autoScrollPoint = null;
     stopAutoScroll();
-    if (flipFrame !== 0) {
-      cancelAnimationFrame(flipFrame);
-      flipFrame = 0;
-    }
+    cancelFlip();
     setPreviewDocument(null);
     setDraggingIds([]);
     props.onDragStateChange?.(false);
@@ -382,7 +343,7 @@ export default function PrintEditor(props: PrintEditorProps) {
     // 起点锚定内容：滚动时随内容平移，矩形保持覆盖同一批内容区域。
     gesture.startX -= dx;
     gesture.startY -= dy;
-    updateMarquee(gesture.lastX, gesture.lastY);
+    if (gesture.moved) updateMarquee(gesture.lastX, gesture.lastY);
   }
 
   createEventListener(() => scrollerRef, 'scroll', handleScrollerScroll);
@@ -413,6 +374,7 @@ export default function PrintEditor(props: PrintEditorProps) {
       startY: event.clientY,
       lastX: event.clientX,
       lastY: event.clientY,
+      moved: false,
       baseIds: additive ? props.selectedIds : [],
     };
     lastScrollTop = scrollerRef.scrollTop;
@@ -423,8 +385,6 @@ export default function PrintEditor(props: PrintEditorProps) {
     } catch {
       // Some WebViews reject capture for already-released pointers.
     }
-    autoScrollPoint = { x: event.clientX, y: event.clientY };
-    startAutoScroll();
     updateMarquee(event.clientX, event.clientY);
   }
 
@@ -433,6 +393,12 @@ export default function PrintEditor(props: PrintEditorProps) {
     if (!gesture || event.pointerId !== gesture.pointerId) return;
     gesture.lastX = event.clientX;
     gesture.lastY = event.clientY;
+    // 未移动不启动自动滚动：否则起点=终点的单击落在边缘时会被滚动的位移撑出巨大矩形
+    if (!gesture.moved) {
+      if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) < 3) return;
+      gesture.moved = true;
+      startAutoScroll();
+    }
     autoScrollPoint = { x: event.clientX, y: event.clientY };
     updateMarquee(event.clientX, event.clientY);
   }
@@ -450,10 +416,7 @@ export default function PrintEditor(props: PrintEditorProps) {
   onCleanup(() => {
     cleanupMarquee();
     stopAutoScroll();
-    if (flipFrame !== 0) {
-      cancelAnimationFrame(flipFrame);
-      flipFrame = 0;
-    }
+    cancelFlip();
     if (dragState) {
       dragState = null;
       props.onCancelTransaction();
@@ -464,14 +427,14 @@ export default function PrintEditor(props: PrintEditorProps) {
   function deleteSelected() {
     if (props.selectedIds.length === 0) return;
     props.onBeginTransaction();
-    props.onUpdateDocument(removeItemsFromDocument(props.document, props.selectedIds));
+    updateWithFlip(removeItemsFromDocument(props.document, props.selectedIds));
     props.onCommitTransaction();
     props.onSelectionChange([]);
   }
 
   function movePageBy(index: number, delta: number) {
     props.onBeginTransaction();
-    props.onUpdateDocument(movePage(props.document, index, index + delta));
+    updateWithFlip(movePage(props.document, index, index + delta));
     props.onCommitTransaction();
   }
 
@@ -479,7 +442,7 @@ export default function PrintEditor(props: PrintEditorProps) {
     const page = props.document.pages[index];
     if (!page) return;
     props.onBeginTransaction();
-    props.onUpdateDocument(removePage(props.document, page.id));
+    updateWithFlip(removePage(props.document, page.id));
     props.onCommitTransaction();
     props.onSelectionChange([]);
   }

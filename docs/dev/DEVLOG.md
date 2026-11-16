@@ -62,3 +62,19 @@
   跨页框选/不裁切/不撑滚动区/选中保留、配置写入与刷新保留、自定义边距同步持久化）。
   测试计数选择器需限定 `[data-print-scroll-area]`（打印层常挂载后全局 id 计数翻倍；应用侧按 id 去重不受影响）。
   `npx rs check` 通过；`pnpm build:browser` 成功（1045.5 kB）。
+- 11-17/00:29 四连修（用户报：拖动动画从左上角播放、删除无动画、亮色预览失效/关不掉、打印带背景色、
+  起点=终点框选巨大）：
+  ① FLIP 起点左上角 = `captureItemRects` 全局查询被常挂载打印层 0×0 副本覆盖 → 限定滚动区；
+  ② 删除/移页/删页补位移动接 FLIP：抽 `utils/flip.ts` `withFlip/cancelFlip`，PrintEditor 与
+  printer index `removeSelected`（工具栏删除路径原先绕过 FLIP）共用；
+  ③ 框选巨大 = 起点=终点的单击落在滚动区边缘时自动滚动把位移累加进矩形 → `moved` 阈值 3px 后才启动
+  自动滚动，未移动时 scroll 锚定只移起点不更新矩形；
+  ④ 打印背景色 = body 背景随背景图形打印 → `body: {'@media print': {background:'#fff'}}`
+  （SUID GlobalStyles 顶层 '@media print' 键不产出规则，必须嵌套在选择器下，取证 styleSheets 确认）；
+  ⑤ 亮色预览根因：**SUID styled 只订阅首见主题对象的 palette 信号，运行时换主题对象不重样式**
+  （系统级切换有效因同一对象内 palette memo 变化；editorTheme memo 重算返回 light 但消费侧冻结，
+  临时 console 取证后移除）→ `createAppTheme` 支持 `isDarkMode` 访问器，MainArea 改单一稳定主题对象
+  `isDarkMode: () => isPreferredDark() && !props.lightMode`。开关双向取证：18,18,18 ↔ 255,255,255。
+- 11-17/00:29 度量：`node tmp-research.local/test.cjs` **44/44 通过**（新增：FLIP 起点非左上角特征断言、
+  删除补位有运行中动画）；`dark-check.cjs` 亮色/静止框选/打印背景三项通过。
+  `npx rs check` 通过；`pnpm build:browser` 成功（1045.7 kB）。
