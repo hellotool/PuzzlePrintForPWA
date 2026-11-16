@@ -41,6 +41,7 @@ export default function PrintPlaceholderCell(props: PrintPlaceholderCellProps) {
         color: 'text.secondary',
         cursor: 'pointer',
         bgcolor: 'transparent',
+        zIndex: 2,
         transition: 'background-color 150ms ease',
         '&:hover': { bgcolor: 'action.hover' },
       }}

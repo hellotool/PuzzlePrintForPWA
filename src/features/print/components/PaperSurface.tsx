@@ -8,7 +8,6 @@ interface PaperSurfaceProps {
   paper: SizeCm;
   contentRect: RectCm;
   mode: 'preview' | 'edit' | 'print';
-  colorMode?: 'colorful' | 'gray';
   pageId?: string;
   class?: string;
   sx?: SxProps<Theme>;
@@ -17,11 +16,13 @@ interface PaperSurfaceProps {
   footer?: JSX.Element;
   children: JSX.Element;
   onPointerDown?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
-  onPointerMove?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
-  onPointerUp?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
-  onPointerCancel?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
-  onLostPointerCapture?: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent>;
   onKeyDown?: JSX.EventHandlerUnion<HTMLDivElement, KeyboardEvent>;
+  onDragStart?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
+  onDrag?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
+  onDragEnd?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
+  onDragEnter?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
+  onDragOver?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
+  onDrop?: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>;
 }
 
 export default function PaperSurface(props: PaperSurfaceProps) {
@@ -36,7 +37,6 @@ export default function PaperSurface(props: PaperSurfaceProps) {
           width: '100%',
           aspectRatio: `${props.paper.width} / ${props.paper.height}`,
           overflow: 'hidden',
-          filter: props.colorMode === 'gray' ? 'grayscale(100%)' : undefined,
           pointerEvents: props.mode === 'preview' ? 'none' : undefined,
         },
         props.sx,
@@ -49,11 +49,13 @@ export default function PaperSurface(props: PaperSurfaceProps) {
         tabIndex={props.tabIndex}
         aria-label={props.mode === 'edit' ? '打印预览编辑画布' : undefined}
         onPointerDown={props.onPointerDown}
-        onPointerMove={props.onPointerMove}
-        onPointerUp={props.onPointerUp}
-        onPointerCancel={props.onPointerCancel}
-        onLostPointerCapture={props.onLostPointerCapture}
         onKeyDown={props.onKeyDown}
+        onDragStart={props.onDragStart}
+        onDrag={props.onDrag}
+        onDragEnd={props.onDragEnd}
+        onDragEnter={props.onDragEnter}
+        onDragOver={props.onDragOver}
+        onDrop={props.onDrop}
         sx={{
           position: 'absolute',
           left: `${(props.contentRect.x / props.paper.width) * 100}%`,

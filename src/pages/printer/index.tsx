@@ -1,9 +1,9 @@
+import { makeEventListener } from '@solid-primitives/event-listener';
 import { Box, useMediaQuery, useTheme } from '@suid/material';
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import type { PrintImageAssets } from '@/domain/print';
 import { buildGridDocument, removeItemsFromDocument, rotateItems } from '@/domain/print';
 import AboutDialog from '@/features/about';
-import { createPrinting } from '@/features/print';
 import { createPrintDocumentStore } from '@/features/print/editor/stores/createPrintDocumentStore';
 import { exportPrintDocumentPdf } from '@/features/print/export/exportPdf';
 import { usePasteImage } from '@/shared/hooks/usePasteImage';
@@ -32,8 +32,6 @@ function PrinterPageContent() {
   const [isExporting, setExporting] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [isDragging, setDragging] = createSignal(false);
-
-  const isPrinting = createPrinting();
 
   const documentSource = createMemo(() =>
     buildGridDocument({
@@ -68,27 +66,24 @@ function PrinterPageContent() {
   });
 
   // 阻止浏览器在未经处理的区域放下文件时直接打开文件导致页面跳转。
-  onMount(() => {
-    function guard(event: DragEvent) {
-      if (event.dataTransfer?.types.includes('Files')) {
-        event.preventDefault();
-      }
+  function guard(event: DragEvent) {
+    if (event.dataTransfer?.types.includes('Files')) {
+      event.preventDefault();
     }
-    function deselectOnOutside(event: PointerEvent) {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest('[data-print-item-id]') || target.closest('[data-print-selection-bar]')) return;
-      setSelectedIds([]);
-    }
-    window.addEventListener('dragover', guard);
-    window.addEventListener('drop', guard);
-    document.addEventListener('pointerdown', deselectOnOutside);
-    onCleanup(() => {
-      window.removeEventListener('dragover', guard);
-      window.removeEventListener('drop', guard);
-      document.removeEventListener('pointerdown', deselectOnOutside);
-    });
-  });
+  }
+  function deselectOnOutside(event: PointerEvent) {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    // 加选修饰键按下时交给框选/点选逻辑处理基底选中。
+    if (event.shiftKey || event.ctrlKey || event.metaKey) return;
+    // 仅纸张滚动区内的空白点击取消选中；工具栏、侧栏、底部操作栏等区域保持选中。
+    if (!target.closest('[data-print-scroll-area]')) return;
+    if (target.closest('[data-print-item-id], [data-print-selection-bar], button, [role="button"], a, input')) return;
+    setSelectedIds([]);
+  }
+  makeEventListener(window, 'dragover', guard);
+  makeEventListener(window, 'drop', guard);
+  makeEventListener(document, 'pointerdown', deselectOnOutside);
 
   function openImageSheet() {
     setSettingsSheetOpened(false);
@@ -227,15 +222,14 @@ function PrinterPageContent() {
         />
         <AdjustSheets open={isSettingsSheetOpened()} onClose={() => setSettingsSheetOpened(false)} />
       </Show>
-      <Show when={isPrinting()}>
-        <SPPrint
-          document={documentStore.document()}
-          assets={assets()}
-          compatibility={config.print.compatibility}
-          imageNumberingEnabled={config.numbering.imageEnabled}
-          pageNumberingEnabled={config.numbering.pageEnabled && config.print.compatibility}
-        />
-      </Show>
+      {/* 打印层常挂载（屏幕 display:none）：beforeprint 才挂载会让打印预览快照与大图解码竞态导致空白图 */}
+      <SPPrint
+        document={documentStore.document()}
+        assets={assets()}
+        compatibility={config.print.compatibility}
+        imageNumberingEnabled={config.numbering.imageEnabled}
+        pageNumberingEnabled={config.numbering.pageEnabled && config.print.compatibility}
+      />
       <AboutDialog open={isAboutDialogOpened()} onClose={() => setAboutDialogOpened(false)} />
     </Box>
   );

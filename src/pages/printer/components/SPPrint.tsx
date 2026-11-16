@@ -2,6 +2,7 @@ import { Box } from '@suid/material';
 import { Index } from 'solid-js';
 import type { PrintDocument, PrintImageAssets } from '@/domain/print';
 import { Print, PrintPaper } from '@/features/print';
+import GridLines from '@/features/print/components/GridLines';
 import PageItems from '@/features/print/components/PageItems';
 
 interface SPPrintProps {
@@ -38,6 +39,11 @@ export default function SPPrint(props: SPPrintProps) {
               ) : undefined
             }
           >
+            <GridLines
+              columns={props.document.layout.columns}
+              rows={props.document.layout.rows}
+              occupied={page().items.length}
+            />
             <PageItems
               page={page()}
               content={{ width: props.document.contentRect.width, height: props.document.contentRect.height }}

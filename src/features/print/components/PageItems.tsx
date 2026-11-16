@@ -1,6 +1,5 @@
-import DragIndicatorIcon from '@suid/icons-material/DragIndicator';
-import { Box } from '@suid/material';
-import { Index, Show } from 'solid-js';
+import { Box, useTheme } from '@suid/material';
+import { createSelector, Index, Show } from 'solid-js';
 import type { PrintImageAssets, PrintPage, SizeCm } from '@/domain/print';
 
 interface PageItemsProps {
@@ -8,6 +7,7 @@ interface PageItemsProps {
   content: SizeCm;
   assets: PrintImageAssets;
   mode: 'preview' | 'edit' | 'print';
+  colorMode?: 'colorful' | 'gray';
   selectedIds?: string[];
   draggingIds?: string[];
   numberingEnabled?: boolean;
@@ -19,32 +19,37 @@ function toPercent(value: number, total: number) {
 }
 
 export default function PageItems(props: PageItemsProps) {
+  const theme = useTheme();
+  const isSelected = createSelector(
+    () => props.selectedIds ?? [],
+    (id: string, ids) => ids.includes(id),
+  );
+  const isDragging = createSelector(
+    () => props.draggingIds ?? [],
+    (id: string, ids) => ids.includes(id),
+  );
   return (
     <Index each={props.page.items}>
       {(item, index) => {
         const asset = () => props.assets[item().imageKey];
-        const selected = () => props.selectedIds?.includes(item().id) ?? false;
-        const dragging = () => props.draggingIds?.includes(item().id) ?? false;
+        const selected = () => isSelected(item().id);
+        const dragging = () => isDragging(item().id);
         return (
           <Box
             data-print-item-id={item().id}
             data-print-selected={selected() ? 'true' : undefined}
+            draggable={props.mode === 'edit' ? true : undefined}
             sx={{
               position: 'absolute',
               left: toPercent(item().frame.x, props.content.width),
               top: toPercent(item().frame.y, props.content.height),
               width: toPercent(item().frame.width, props.content.width),
               height: toPercent(item().frame.height, props.content.height),
-              opacity: dragging() ? 0.35 : undefined,
-              cursor: props.mode === 'edit' ? 'default' : 'default',
+              opacity: dragging() ? 0.28 : undefined,
+              cursor: props.mode === 'edit' ? 'grab' : 'default',
               userSelect: 'none',
               pointerEvents: props.mode === 'preview' ? 'none' : 'auto',
-              '&:hover [data-print-drag-handle], &[data-print-selected="true"] [data-print-drag-handle]': {
-                opacity: 1,
-              },
-              '@media (pointer: coarse)': {
-                '[data-print-drag-handle]': { opacity: 1 },
-              },
+              zIndex: selected() ? 2 : undefined,
             }}
           >
             <Box
@@ -60,13 +65,23 @@ export default function PageItems(props: PageItemsProps) {
                 objectFit: item().fit,
                 boxSizing: 'border-box',
                 transform: `rotate(${item().rotation}deg)`,
-                border: '1px dashed rgba(0, 0, 0, 0.2)',
-                outline: selected() ? '2px solid' : 'none',
-                outlineColor: selected() ? 'primary.main' : undefined,
-                outlineOffset: -2,
+                filter: props.colorMode === 'gray' ? 'grayscale(100%)' : undefined,
                 pointerEvents: 'none',
               }}
             />
+            <Show when={selected()}>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  transform: `rotate(${item().rotation}deg)`,
+                  outline: '2px solid',
+                  outlineColor: theme.palette.primary.main,
+                  outlineOffset: -2,
+                  pointerEvents: 'none',
+                }}
+              />
+            </Show>
             <Show when={props.numberingEnabled}>
               <Box
                 sx={{
@@ -86,36 +101,6 @@ export default function PageItems(props: PageItemsProps) {
                 }}
               >
                 {(props.numberingStart ?? 0) + index + 1}
-              </Box>
-            </Show>
-            <Show when={props.mode === 'edit'}>
-              <Box
-                data-print-drag-handle="true"
-                role="button"
-                aria-label="拖动调整顺序"
-                title="拖动调整顺序"
-                sx={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  zIndex: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 22,
-                  height: 22,
-                  borderRadius: 0.75,
-                  bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  color: 'text.secondary',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                  cursor: 'grab',
-                  touchAction: 'none',
-                  opacity: 0.5,
-                  transition: 'opacity 120ms ease',
-                  '&:active': { cursor: 'grabbing' },
-                }}
-              >
-                <DragIndicatorIcon sx={{ fontSize: 16 }} />
               </Box>
             </Show>
           </Box>

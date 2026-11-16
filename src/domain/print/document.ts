@@ -63,16 +63,11 @@ export function buildGridDocument(options: BuildGridDocumentOptions): PrintDocum
 
 export function filterDocumentByExcludedKeys(document: PrintDocument, excludedImageKeys: string[]): PrintDocument {
   const excluded = new Set(excludedImageKeys);
-  const pages = document.pages
-    .map((page) => ({
-      ...page,
-      items: page.items.filter((item) => !excluded.has(item.imageKey)),
-    }))
-    .filter((page) => page.items.length > 0);
+  const items = document.pages.flatMap((page) => page.items).filter((item) => !excluded.has(item.imageKey));
   return {
     ...document,
     excludedImageKeys: [...excluded],
-    pages,
+    pages: rebuildGridPages(document, items),
   };
 }
 
@@ -80,10 +75,11 @@ export function removePage(document: PrintDocument, pageId: string): PrintDocume
   const page = document.pages.find((value) => value.id === pageId);
   if (!page) return document;
   const excludedImageKeys = [...new Set([...document.excludedImageKeys, ...page.items.map((item) => item.imageKey)])];
+  const items = document.pages.filter((value) => value.id !== pageId).flatMap((value) => value.items);
   return {
     ...document,
     excludedImageKeys,
-    pages: document.pages.filter((value) => value.id !== pageId),
+    pages: rebuildGridPages(document, items),
   };
 }
 
@@ -114,16 +110,11 @@ export function removeItemsFromDocument(document: PrintDocument, itemIds: string
     .filter((item) => ids.has(item.id))
     .map((item) => item.imageKey);
   const excludedImageKeys = [...new Set([...document.excludedImageKeys, ...removedKeys])];
-  const pages = document.pages
-    .map((page) => ({
-      ...page,
-      items: page.items.filter((item) => !ids.has(item.id)),
-    }))
-    .filter((page) => page.items.length > 0);
+  const items = document.pages.flatMap((page) => page.items).filter((item) => !ids.has(item.id));
   return {
     ...document,
     excludedImageKeys,
-    pages,
+    pages: rebuildGridPages(document, items),
   };
 }
 

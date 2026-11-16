@@ -17,6 +17,12 @@ export default function PrintPaper(props: PrintPaperProps) {
         position: 'relative',
         width: '100%',
         aspectRatio: `${paperConfig.compatibility ? paperConfig.paperAspectRatio : paperConfig.contentAspectRatio}`,
+        // 打印时用厘米精确限高：aspect-ratio 的亚像素舍入溢出会被分页成空白碎片页，
+        // 而 vh 在部分引擎的打印管线里解析不一致会导致布局缩放异常。
+        '@media print': {
+          aspectRatio: 'auto',
+          height: `${paperConfig.compatibility ? paperConfig.paperHeightCm : paperConfig.contentHeightCm}cm`,
+        },
         overflow: 'hidden',
       }}
     >

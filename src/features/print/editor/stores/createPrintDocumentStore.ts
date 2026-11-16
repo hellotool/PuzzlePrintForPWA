@@ -13,7 +13,8 @@ export function createPrintDocumentStore(source: () => PrintDocument) {
       source,
       (next) => {
         const previous = document();
-        setDocument(filterDocumentByExcludedKeys(applyItemTransforms(next, previous), previous.excludedImageKeys));
+        // 先排除再打包：被排除图片若参与打包会在过滤后留下空洞并把新图挤到幻影页。
+        setDocument(applyItemTransforms(filterDocumentByExcludedKeys(next, previous.excludedImageKeys), previous));
         undoStack.length = 0;
         redoStack.length = 0;
         transactionStart = undefined;
@@ -66,7 +67,7 @@ export function createPrintDocumentStore(source: () => PrintDocument) {
   }
 
   function reflow() {
-    setDocument(filterDocumentByExcludedKeys(applyItemTransforms(source(), document()), document().excludedImageKeys));
+    setDocument(applyItemTransforms(filterDocumentByExcludedKeys(source(), document().excludedImageKeys), document()));
     undoStack.length = 0;
     redoStack.length = 0;
     transactionStart = undefined;

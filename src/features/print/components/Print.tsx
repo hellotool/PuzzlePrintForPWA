@@ -92,6 +92,8 @@ export default function Print(props: PrintProps) {
           compatibility={finalProps.compatibility}
           contentAspectRatio={contentAspectRatio()}
           paperAspectRatio={paperAspectRatio()}
+          paperHeightCm={finalPaperSize().height}
+          contentHeightCm={contentSize().height}
           contentInset={contentInset()}
           marginBottomFraction={marginBottomFraction()}
         >

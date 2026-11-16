@@ -11,6 +11,8 @@ export interface PrintPaperConfig {
   compatibility: boolean;
   contentAspectRatio: number;
   paperAspectRatio: number;
+  paperHeightCm: number;
+  contentHeightCm: number;
   contentInset: PrintPaperContentInset;
   marginBottomFraction: number;
 }
@@ -25,6 +27,8 @@ export function PrintPaperConfigProvider(props: PrintPaperConfigProviderProps) {
     'compatibility',
     'contentAspectRatio',
     'paperAspectRatio',
+    'paperHeightCm',
+    'contentHeightCm',
     'contentInset',
     'marginBottomFraction',
   ]);

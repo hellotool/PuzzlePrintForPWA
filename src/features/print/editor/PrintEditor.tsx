@@ -1,7 +1,8 @@
-import { Box, Typography } from '@suid/material';
+import AddIcon from '@suid/icons-material/Add';
+import { createEventListener } from '@solid-primitives/event-listener';
+import { alpha, Box, useTheme } from '@suid/material';
 import { Index, onCleanup, Show, createSignal } from 'solid-js';
 import {
-  getGridFrame,
   moveItemsToIndex,
   movePage,
   removeItemsFromDocument,
@@ -9,8 +10,6 @@ import {
   type PrintDocument,
   type PrintImageAssets,
 } from '@/domain/print';
-import PaperSurface from '../components/PaperSurface';
-import PrintPlaceholderCell from '../components/PrintPlaceholderCell';
 import EditorPage from './EditorPage';
 
 interface PrintEditorProps {
@@ -31,14 +30,14 @@ interface PrintEditorProps {
   onDragStateChange?: (dragging: boolean) => void;
 }
 
-interface DragGhost {
-  left: number;
-  top: number;
+export interface DragStartInfo {
+  itemIds: string[];
+  url: string;
+  name: string;
+  type?: string;
+  rotation: number;
   width: number;
   height: number;
-  rotation: number;
-  url: string;
-  count: number;
 }
 
 interface DragState {
@@ -50,6 +49,22 @@ interface DragState {
   lastClientX: number;
   lastClientY: number;
   insertIndex: number;
+}
+
+interface MarqueeGesture {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastY: number;
+  baseIds: string[];
+}
+
+interface MarqueeRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 const runningAnimations = new WeakMap<HTMLElement, Animation>();
@@ -98,13 +113,19 @@ function sameItemOrder(a: PrintDocument, b: PrintDocument) {
 }
 
 export default function PrintEditor(props: PrintEditorProps) {
+  const theme = useTheme();
   let scrollerRef: HTMLDivElement | undefined;
   let dragState: DragState | null = null;
+  let dragDropped = false;
+  let marqueeGesture: MarqueeGesture | null = null;
+  let autoScrollPoint: { x: number; y: number } | null = null;
+  let lastScrollTop = 0;
+  let lastScrollLeft = 0;
   let scrollFrame = 0;
   let flipFrame = 0;
   const [previewDocument, setPreviewDocument] = createSignal<PrintDocument | null>(null);
   const [draggingIds, setDraggingIds] = createSignal<string[]>([]);
-  const [dragGhost, setDragGhost] = createSignal<DragGhost | null>(null);
+  const [marquee, setMarquee] = createSignal<MarqueeRect | null>(null);
 
   const activeDocument = () => previewDocument() ?? props.document;
   const capacity = () => Math.max(1, props.document.layout.columns * props.document.layout.rows);
@@ -167,18 +188,6 @@ export default function PrintEditor(props: PrintEditorProps) {
     return null;
   }
 
-  function updateGhost(clientX: number, clientY: number) {
-    const state = dragState;
-    if (!state) return;
-    const current = dragGhost();
-    if (!current) return;
-    setDragGhost({
-      ...current,
-      left: clientX - state.width / 2,
-      top: clientY - state.height / 2,
-    });
-  }
-
   function applyPreview(index: number) {
     const state = dragState;
     if (!state || index === state.insertIndex) return;
@@ -186,10 +195,10 @@ export default function PrintEditor(props: PrintEditorProps) {
     reorderItemsToIndex(state.itemIds, index);
   }
 
-  function handleDragStart(itemId: string, clientX: number, clientY: number): void {
+  function handleDragStart(itemId: string, clientX: number, clientY: number): DragStartInfo | undefined {
     const flattened = props.document.pages.flatMap((page) => page.items);
     const item = flattened.find((value) => value.id === itemId);
-    if (!item) return;
+    if (!item) return undefined;
     const existingIds = new Set(flattened.map((value) => value.id));
     const selected = props.selectedIds.filter((id) => existingIds.has(id));
     const itemIds = selected.includes(itemId) && selected.length > 1 ? selected : [itemId];
@@ -214,6 +223,7 @@ export default function PrintEditor(props: PrintEditorProps) {
     const asset = props.assets[item.imageKey];
 
     const initialIndex = resolveInsertIndex(clientX, clientY);
+    dragDropped = false;
     dragState = {
       itemId,
       itemIds,
@@ -225,27 +235,31 @@ export default function PrintEditor(props: PrintEditorProps) {
       insertIndex: initialIndex ?? -1,
     };
     setDraggingIds(itemIds);
-    setDragGhost({
-      left: clientX - width / 2,
-      top: clientY - height / 2,
-      width,
-      height,
-      rotation: item.rotation,
-      url: asset?.url ?? '',
-      count: itemIds.length,
-    });
     props.onBeginTransaction();
     props.onDragStateChange?.(true);
     startAutoScroll();
+    return {
+      itemIds,
+      url: asset?.url ?? '',
+      name: asset?.name ?? '',
+      type: asset?.type,
+      rotation: item.rotation,
+      width,
+      height,
+    };
   }
 
   function handleDragMove(clientX: number, clientY: number) {
     if (!dragState) return;
     dragState.lastClientX = clientX;
     dragState.lastClientY = clientY;
-    updateGhost(clientX, clientY);
+    autoScrollPoint = { x: clientX, y: clientY };
     const index = resolveInsertIndex(clientX, clientY);
     if (index !== null) applyPreview(index);
+  }
+
+  function handleDragDrop() {
+    dragDropped = true;
   }
 
   function handleDragEnd(clientX: number, clientY: number) {
@@ -253,7 +267,7 @@ export default function PrintEditor(props: PrintEditorProps) {
       dragState.lastClientX = clientX;
       dragState.lastClientY = clientY;
     }
-    finishDrag(true);
+    finishDrag(dragDropped);
   }
 
   function finishDrag(commit: boolean) {
@@ -273,6 +287,7 @@ export default function PrintEditor(props: PrintEditorProps) {
       props.onCancelTransaction();
     }
     dragState = null;
+    autoScrollPoint = null;
     stopAutoScroll();
     if (flipFrame !== 0) {
       cancelAnimationFrame(flipFrame);
@@ -280,7 +295,6 @@ export default function PrintEditor(props: PrintEditorProps) {
     }
     setPreviewDocument(null);
     setDraggingIds([]);
-    setDragGhost(null);
     props.onDragStateChange?.(false);
   }
 
@@ -288,9 +302,9 @@ export default function PrintEditor(props: PrintEditorProps) {
     if (scrollFrame !== 0) return;
     const tick = () => {
       scrollFrame = 0;
-      const state = dragState;
+      const point = autoScrollPoint;
       const scroller = scrollerRef;
-      if (!state) return;
+      if (!point) return;
       if (!scroller) {
         scrollFrame = requestAnimationFrame(tick);
         return;
@@ -299,17 +313,19 @@ export default function PrintEditor(props: PrintEditorProps) {
       const threshold = 56;
       const maxSpeed = 22;
       let delta = 0;
-      if (state.lastClientY < rect.top + threshold) {
-        delta = -Math.ceil(((rect.top + threshold - state.lastClientY) / threshold) * maxSpeed);
-      } else if (state.lastClientY > rect.bottom - threshold) {
-        delta = Math.ceil(((state.lastClientY - (rect.bottom - threshold)) / threshold) * maxSpeed);
+      if (point.y < rect.top + threshold) {
+        delta = -Math.ceil(((rect.top + threshold - point.y) / threshold) * maxSpeed);
+      } else if (point.y > rect.bottom - threshold) {
+        delta = Math.ceil(((point.y - (rect.bottom - threshold)) / threshold) * maxSpeed);
       }
       if (delta !== 0) {
         const before = scroller.scrollTop;
         scroller.scrollTop = before + delta;
         if (scroller.scrollTop !== before) {
-          const index = resolveInsertIndex(state.lastClientX, state.lastClientY);
-          if (index !== null) applyPreview(index);
+          if (dragState) {
+            const index = resolveInsertIndex(point.x, point.y);
+            if (index !== null) applyPreview(index);
+          }
         }
       }
       scrollFrame = requestAnimationFrame(tick);
@@ -324,7 +340,115 @@ export default function PrintEditor(props: PrintEditorProps) {
     }
   }
 
+  function updateMarquee(clientX: number, clientY: number) {
+    const gesture = marqueeGesture;
+    if (!gesture) return;
+    // 矩形用客户端坐标 + fixed 渲染：绝对定位子元素会撑大滚动区的可溢出范围。
+    setMarquee({
+      x: Math.min(gesture.startX, clientX),
+      y: Math.min(gesture.startY, clientY),
+      width: Math.abs(clientX - gesture.startX),
+      height: Math.abs(clientY - gesture.startY),
+    });
+    const left = Math.min(gesture.startX, clientX);
+    const top = Math.min(gesture.startY, clientY);
+    const right = Math.max(gesture.startX, clientX);
+    const bottom = Math.max(gesture.startY, clientY);
+    const hits = [...document.querySelectorAll<HTMLElement>('[data-print-item-id]')]
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.left < right &&
+          rect.right > left &&
+          rect.top < bottom &&
+          rect.bottom > top
+        );
+      })
+      .map((element) => element.dataset.printItemId as string);
+    props.onSelectionChange([...new Set([...gesture.baseIds, ...hits])]);
+  }
+
+  function handleScrollerScroll() {
+    const gesture = marqueeGesture;
+    const scroller = scrollerRef;
+    if (!gesture || !scroller) return;
+    const dy = scroller.scrollTop - lastScrollTop;
+    const dx = scroller.scrollLeft - lastScrollLeft;
+    lastScrollTop = scroller.scrollTop;
+    lastScrollLeft = scroller.scrollLeft;
+    if (dx === 0 && dy === 0) return;
+    // 起点锚定内容：滚动时随内容平移，矩形保持覆盖同一批内容区域。
+    gesture.startX -= dx;
+    gesture.startY -= dy;
+    updateMarquee(gesture.lastX, gesture.lastY);
+  }
+
+  createEventListener(() => scrollerRef, 'scroll', handleScrollerScroll);
+
+  function cleanupMarquee() {
+    const gesture = marqueeGesture;
+    marqueeGesture = null;
+    setMarquee(null);
+    autoScrollPoint = null;
+    stopAutoScroll();
+    if (gesture && scrollerRef?.hasPointerCapture(gesture.pointerId)) {
+      scrollerRef.releasePointerCapture(gesture.pointerId);
+    }
+  }
+
+  function handleScrollerPointerDown(event: PointerEvent) {
+    // 框选在滚动区层级发起：可跨页、可越过纸张边界，overlay 不被单张纸裁切。
+    if (event.pointerType !== 'mouse') return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('[data-print-item-id], button, [role="button"], a, input, [data-print-selection-bar]')) return;
+    if (!scrollerRef) return;
+    if (marqueeGesture) cleanupMarquee();
+    event.preventDefault();
+    const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+    marqueeGesture = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      baseIds: additive ? props.selectedIds : [],
+    };
+    lastScrollTop = scrollerRef.scrollTop;
+    lastScrollLeft = scrollerRef.scrollLeft;
+    if (!additive) props.onSelectionChange([]);
+    try {
+      scrollerRef.setPointerCapture(event.pointerId);
+    } catch {
+      // Some WebViews reject capture for already-released pointers.
+    }
+    autoScrollPoint = { x: event.clientX, y: event.clientY };
+    startAutoScroll();
+    updateMarquee(event.clientX, event.clientY);
+  }
+
+  function handleScrollerPointerMove(event: PointerEvent) {
+    const gesture = marqueeGesture;
+    if (!gesture || event.pointerId !== gesture.pointerId) return;
+    gesture.lastX = event.clientX;
+    gesture.lastY = event.clientY;
+    autoScrollPoint = { x: event.clientX, y: event.clientY };
+    updateMarquee(event.clientX, event.clientY);
+  }
+
+  function handleScrollerPointerUp(event: PointerEvent) {
+    if (!marqueeGesture || event.pointerId !== marqueeGesture.pointerId) return;
+    cleanupMarquee();
+  }
+
+  function handleScrollerLostPointerCapture(event: PointerEvent) {
+    if (!marqueeGesture || event.pointerId !== marqueeGesture.pointerId) return;
+    cleanupMarquee();
+  }
+
   onCleanup(() => {
+    cleanupMarquee();
     stopAutoScroll();
     if (flipFrame !== 0) {
       cancelAnimationFrame(flipFrame);
@@ -365,6 +489,12 @@ export default function PrintEditor(props: PrintEditorProps) {
       ref={(element) => {
         scrollerRef = element;
       }}
+      data-print-scroll-area="true"
+      onPointerDown={handleScrollerPointerDown}
+      onPointerMove={handleScrollerPointerMove}
+      onPointerUp={handleScrollerPointerUp}
+      onPointerCancel={handleScrollerPointerUp}
+      onLostPointerCapture={handleScrollerLostPointerCapture}
       sx={{
         height: '100%',
         minHeight: 0,
@@ -394,6 +524,7 @@ export default function PrintEditor(props: PrintEditorProps) {
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
+            onDragDrop={handleDragDrop}
             onDragCancel={() => finishDrag(false)}
             onDeleteSelected={deleteSelected}
             canMoveUp={index > 0}
@@ -409,79 +540,54 @@ export default function PrintEditor(props: PrintEditorProps) {
         )}
       </Index>
       <Show when={lastPageFull()}>
-        <Box sx={{ width: '100%', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <PaperSurface
-            paper={props.document.paper}
-            contentRect={props.document.contentRect}
-            mode="edit"
-            colorMode={props.colorMode}
-          >
-            <PrintPlaceholderCell
-              frame={getGridFrame(
-                props.document.contentRect,
-                props.document.layout.columns,
-                props.document.layout.rows,
-                0,
-              )}
-              content={props.document.contentRect}
-              onAddImages={props.onAddImages}
-            />
-          </PaperSurface>
-          <Typography align="center" variant="caption" color="text.secondary">
-            第 {activeDocument().pages.length + 1} 页
-          </Typography>
+        <Box
+          data-print-add-placeholder="true"
+          role="button"
+          tabIndex={0}
+          aria-label="添加图片"
+          onClick={props.onAddImages}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              props.onAddImages();
+            }
+          }}
+          sx={{
+            width: '100%',
+            maxWidth: 760,
+            aspectRatio: `${props.document.paper.width} / ${props.document.paper.height}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px dashed',
+            borderColor: 'divider',
+            color: 'text.secondary',
+            cursor: 'pointer',
+            bgcolor: 'transparent',
+            transition: 'background-color 150ms ease',
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
+          <AddIcon />
         </Box>
       </Show>
-      <Show when={dragGhost()}>
-        {(ghost) => (
+      <Show when={marquee()}>
+        {(rect) => (
           <Box
-            data-print-drag-ghost="true"
+            data-print-marquee="true"
             sx={{
               position: 'fixed',
-              left: ghost().left,
-              top: ghost().top,
-              width: ghost().width,
-              height: ghost().height,
-              transform: `rotate(${ghost().rotation}deg)`,
+              left: rect().x,
+              top: rect().y,
+              width: rect().width,
+              height: rect().height,
+              border: '1px solid',
+              borderColor: 'primary.main',
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
               pointerEvents: 'none',
-              zIndex: 1300,
+              zIndex: 5,
             }}
-          >
-            <Box
-              component="img"
-              src={ghost().url}
-              alt=""
-              draggable={false}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                opacity: 0.9,
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
-              }}
-            />
-            <Show when={ghost().count > 1}>
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  minWidth: 20,
-                  px: 0.75,
-                  py: 0.25,
-                  borderRadius: 10,
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  lineHeight: 1.5,
-                  textAlign: 'center',
-                }}
-              >
-                {ghost().count}
-              </Box>
-            </Show>
-          </Box>
+          />
         )}
       </Show>
     </Box>

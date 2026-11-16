@@ -1,4 +1,4 @@
-import { onCleanup } from 'solid-js';
+import { makeEventListener } from '@solid-primitives/event-listener';
 
 const IGNORED_TARGETS = 'input, textarea, select, [contenteditable], [role="dialog"], [role="menu"], .MuiModal-root';
 
@@ -27,6 +27,5 @@ export function usePasteImage(onFiles: (files: File[]) => void) {
     onFiles(files);
   }
 
-  document.addEventListener('paste', handlePaste);
-  onCleanup(() => document.removeEventListener('paste', handlePaste));
+  makeEventListener(document, 'paste', handlePaste);
 }

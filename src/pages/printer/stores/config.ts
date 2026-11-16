@@ -1,4 +1,5 @@
-import { createStore, type SetStoreFunction } from 'solid-js/store';
+import { makePersisted } from '@solid-primitives/storage';
+import { createStore, type SetStoreFunction, type StoreReturn } from 'solid-js/store';
 import type { NumberingConfig, PaperLayout, PreviewConfig, PrintConfig } from '../types/config';
 
 export interface ConfigStore {
@@ -37,31 +38,27 @@ function createDefaultConfig(): ConfigStore {
   };
 }
 
-function loadStoredConfig(): ConfigStore {
+function mergeStoredConfig(stored: Partial<ConfigStore>): ConfigStore {
   const defaults = createDefaultConfig();
-  if (typeof sessionStorage === 'undefined') return defaults;
-  try {
-    const raw = sessionStorage.getItem(CONFIG_STORAGE_KEY);
-    if (!raw) return defaults;
-    const stored = JSON.parse(raw) as Partial<ConfigStore>;
-    // 旧版配置只有 numbering.enabled，迁移为图片序号与页码两个开关
-    const storedNumbering = (stored.numbering ?? {}) as Partial<NumberingConfig> & { enabled?: boolean };
-    return {
-      layout: { ...defaults.layout, ...stored.layout },
-      print: { ...defaults.print, ...stored.print },
-      preview: { ...defaults.preview, ...stored.preview },
-      numbering: {
-        imageEnabled: storedNumbering.imageEnabled ?? storedNumbering.enabled ?? defaults.numbering.imageEnabled,
-        pageEnabled: storedNumbering.pageEnabled ?? storedNumbering.enabled ?? defaults.numbering.pageEnabled,
-      },
-    };
-  } catch {
-    return defaults;
-  }
+  // 旧版配置只有 numbering.enabled，迁移为图片序号与页码两个开关
+  const storedNumbering = (stored.numbering ?? {}) as Partial<NumberingConfig> & { enabled?: boolean };
+  return {
+    layout: { ...defaults.layout, ...stored.layout },
+    print: { ...defaults.print, ...stored.print },
+    preview: { ...defaults.preview, ...stored.preview },
+    numbering: {
+      imageEnabled: storedNumbering.imageEnabled ?? storedNumbering.enabled ?? defaults.numbering.imageEnabled,
+      pageEnabled: storedNumbering.pageEnabled ?? storedNumbering.enabled ?? defaults.numbering.pageEnabled,
+    },
+  };
 }
 
 export function createConfigStore() {
-  return createStore<ConfigStore>(loadStoredConfig());
+  return makePersisted<ConfigStore, StoreReturn<ConfigStore>>(createStore<ConfigStore>(createDefaultConfig()), {
+    name: CONFIG_STORAGE_KEY,
+    storage: typeof sessionStorage === 'undefined' ? undefined : sessionStorage,
+    deserialize: (raw) => mergeStoredConfig(JSON.parse(raw) as Partial<ConfigStore>),
+  });
 }
 
 export interface ConfigActions {

@@ -1,7 +1,7 @@
+import { createWritableMemo } from '@solid-primitives/memo';
 import { Box, ListItem } from '@suid/material';
 import type { SxProps } from '@suid/system';
 import type { Theme } from '@suid/material/styles';
-import { createEffect, createSignal, on } from 'solid-js';
 import Slider, { type SliderProps } from '@/shared/ui/suid/Slider';
 import ListItemTitledComponent from './ListItemTitledComponent';
 
@@ -16,19 +16,7 @@ interface ListSliderItemProps<Value extends number | number[]> {
 }
 
 export default function ListSliderItem<Value extends number | number[]>(props: ListSliderItemProps<Value>) {
-  const [value, setValue] = createSignal<Value>((props.value ?? 0) as Value);
-
-  createEffect(
-    on(
-      () => props.value,
-      (nextValue) => {
-        if (nextValue !== undefined) {
-          setValue(() => nextValue as Value);
-        }
-      },
-      { defer: true },
-    ),
-  );
+  const [value, setValue] = createWritableMemo(() => (props.value ?? 0) as Value, (props.value ?? 0) as Value);
 
   function handleChange(event: Event, nextValue: number | number[], activeThumb: number) {
     setValue(() => nextValue as Value);
