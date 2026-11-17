@@ -1,5 +1,5 @@
 import AddIcon from '@suid/icons-material/Add';
-import { createEventListener, makeEventListener } from '@solid-primitives/event-listener';
+import { createEventListener } from '@solid-primitives/event-listener';
 import { alpha, Box, useTheme } from '@suid/material';
 import { Index, onCleanup, Show, createSignal } from 'solid-js';
 import {
@@ -58,7 +58,6 @@ interface MarqueeGesture {
   startY: number;
   lastX: number;
   lastY: number;
-  moved: boolean;
   baseIds: string[];
 }
 
@@ -343,21 +342,18 @@ export default function PrintEditor(props: PrintEditorProps) {
     // 起点锚定内容：滚动时随内容平移，矩形保持覆盖同一批内容区域。
     gesture.startX -= dx;
     gesture.startY -= dy;
-    if (gesture.moved) updateMarquee(gesture.lastX, gesture.lastY);
+    updateMarquee(gesture.lastX, gesture.lastY);
   }
 
   createEventListener(() => scrollerRef, 'scroll', handleScrollerScroll);
-  // 不用 setPointerCapture：部分浏览器捕获后 pointermove 坐标退化为 (0,0)，
-  // 框选矩形会冻结在起点或画成巨矩形；window 级监听同样能收到滚区外的移动/抬起。
-  makeEventListener(window, 'pointermove', handleScrollerPointerMove);
-  makeEventListener(window, 'pointerup', handleScrollerPointerUp);
-  makeEventListener(window, 'pointercancel', handleScrollerPointerUp);
 
   function cleanupMarquee() {
+    const gesture = marqueeGesture;
     marqueeGesture = null;
     setMarquee(null);
-    autoScrollPoint = null;
-    stopAutoScroll();
+    if (gesture && scrollerRef?.hasPointerCapture(gesture.pointerId)) {
+      scrollerRef.releasePointerCapture(gesture.pointerId);
+    }
   }
 
   function handleScrollerPointerDown(event: PointerEvent) {
@@ -375,12 +371,16 @@ export default function PrintEditor(props: PrintEditorProps) {
       startY: event.clientY,
       lastX: event.clientX,
       lastY: event.clientY,
-      moved: false,
       baseIds: additive ? props.selectedIds : [],
     };
     lastScrollTop = scrollerRef.scrollTop;
     lastScrollLeft = scrollerRef.scrollLeft;
     if (!additive) props.onSelectionChange([]);
+    try {
+      scrollerRef.setPointerCapture(event.pointerId);
+    } catch {
+      // Some WebViews reject capture for already-released pointers.
+    }
     updateMarquee(event.clientX, event.clientY);
   }
 
@@ -389,17 +389,15 @@ export default function PrintEditor(props: PrintEditorProps) {
     if (!gesture || event.pointerId !== gesture.pointerId) return;
     gesture.lastX = event.clientX;
     gesture.lastY = event.clientY;
-    // 未移动不启动自动滚动：否则起点=终点的单击落在边缘时会被滚动的位移撑出巨大矩形
-    if (!gesture.moved) {
-      if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) < 3) return;
-      gesture.moved = true;
-      startAutoScroll();
-    }
-    autoScrollPoint = { x: event.clientX, y: event.clientY };
     updateMarquee(event.clientX, event.clientY);
   }
 
   function handleScrollerPointerUp(event: PointerEvent) {
+    if (!marqueeGesture || event.pointerId !== marqueeGesture.pointerId) return;
+    cleanupMarquee();
+  }
+
+  function handleScrollerLostPointerCapture(event: PointerEvent) {
     if (!marqueeGesture || event.pointerId !== marqueeGesture.pointerId) return;
     cleanupMarquee();
   }
@@ -445,6 +443,10 @@ export default function PrintEditor(props: PrintEditorProps) {
       }}
       data-print-scroll-area="true"
       onPointerDown={handleScrollerPointerDown}
+      onPointerMove={handleScrollerPointerMove}
+      onPointerUp={handleScrollerPointerUp}
+      onPointerCancel={handleScrollerPointerUp}
+      onLostPointerCapture={handleScrollerLostPointerCapture}
       sx={{
         height: '100%',
         minHeight: 0,
