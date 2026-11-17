@@ -391,6 +391,9 @@ export default function PrintEditor(props: PrintEditorProps) {
   function handleScrollerPointerMove(event: PointerEvent) {
     const gesture = marqueeGesture;
     if (!gesture || event.pointerId !== gesture.pointerId) return;
+    // Chromium 在 setPointerCapture 后可能派发 (0,0) 的合成 pointermove，
+    // 当作真实移动会画出起点到左上角的巨矩形并触发向顶自动滚动（原生 drag 路径同款防护）。
+    if (event.clientX === 0 && event.clientY === 0) return;
     gesture.lastX = event.clientX;
     gesture.lastY = event.clientY;
     // 未移动不启动自动滚动：否则起点=终点的单击落在边缘时会被滚动的位移撑出巨大矩形

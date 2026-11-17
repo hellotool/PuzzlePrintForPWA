@@ -78,3 +78,10 @@
 - 11-17/00:29 度量：`node tmp-research.local/test.cjs` **44/44 通过**（新增：FLIP 起点非左上角特征断言、
   删除补位有运行中动画）；`dark-check.cjs` 亮色/静止框选/打印背景三项通过。
   `npx rs check` 通过；`pnpm build:browser` 成功（1045.7 kB）。
+- 11-17/20:02 框选巨矩形真根因（用户复报"鼠标未移动仍巨框"，上一轮 3px 阈值只修了自动滚动 runaway 一支）：
+  **Chromium 在 setPointerCapture 后派发 (0,0) 合成 pointermove**；marquee move 未设防 → 被当作移到左上角、
+  越过阈值置 moved=true → 画出起点到 (0,0) 的巨矩形并触发向顶自动滚动。原生 drag 路径早有同款
+  `clientX===0&&clientY===0` 防护（handleDrag），marquee 漏加。headless 合成事件不触发该怪癖故上轮未复现。
+  修复：handleScrollerPointerMove 加 (0,0) 守卫。回归断言：静止按住注入 (0,0) move → 矩形 2×2、scrollTop 不变。
+- 11-17/20:02 度量：`node tmp-research.local/test.cjs` **45/45 通过**；`npx rs check` 通过；
+  `pnpm build:browser` 成功（1045.7 kB）。
