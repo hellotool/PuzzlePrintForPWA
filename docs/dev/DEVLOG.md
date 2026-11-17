@@ -98,3 +98,19 @@
   复核 agent 哈希比对 HEAD blob 一致、全仓无引用后逐文件 rm + rmdir 清除；git 删除未提交）。
 - 11-17/20:29 度量：`node tmp-research.local/test.cjs` **45/45 通过**；`npx rs check` 通过；
   `pnpm build:browser` 成功（1045.6 kB）。
+- 11-17/21:18 用户否定自动滚动归因并要求手动发事件实测。`dispatch-matrix.cjs` 事件矩阵（当前构建）：
+  同坐标 move / 静止按住 = 2×2 稳定；(0,0) move = 左上角静态巨矩形（494×88，不增长）；
+  滚轮 = 有限锚定增长（h 随 scrollTop 线性）；out-and-back 归零。**headless 复现不出"右下无限增长"**。
+  按用户要求还原：恢复 setPointerCapture 与滚区 pointer 管线（撤 d725135），撤 3px 阈值与 (0,0) 守卫；
+  移除框选自动滚动（切断锚定反馈环，拖拽自动滚动保留）。提交 fbe1d3e。45/45 通过。
+  下一步：用户浏览器控制台探针抓真实 pointer/scroll 事件流与矩形时间序列（__marqueeLog），待回传。
+- 11-17/21:54 用户回传探针日志（355 条）。解析发现病态突刺：同坐标/±1px move 产生恒定 569/312
+  （= 用户环境 scrollTop/scrollLeft）或视口尺寸的矩形；**用其日志事件序列回放到手写实现可以复现
+  （22 个病态突刺）**，证明是手写 marquee 的坐标/锚定缺陷而非浏览器怪癖；此前矩阵未覆盖其滚动偏移组合。
+  用户要求改用成品库 → **框选整体换 @viselect/vanilla 3.10.1**：删除全部手写 marquee
+  （gesture/updateMarquee/overlay/pointer 管线/锚定），SelectionArea container=boundaries=滚区、
+  selectables 限定滚区内 item、intersect touch、startThreshold 3、features.touch=false 保留原生触摸滚动、
+  singleTap.allow=false；beforestart 排除 item/按钮并记录加选基底，move/stop 由 store.selected 映射 ids；
+  外部选中变化 clearSelection(true,true) 重置库存储；resolveSelectables 随 document 变化；
+  .selection-area 用 GlobalStyles 上 primary 色。回放同一日志：**0 突刺**；套件 45/45
+  （跨页/不裁切/不撑滚动区/静止零矩形/选中保留全过）。lint/format/build 通过（1058.2 kB）。

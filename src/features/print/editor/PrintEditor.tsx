@@ -1,7 +1,7 @@
 import AddIcon from '@suid/icons-material/Add';
-import { createEventListener } from '@solid-primitives/event-listener';
-import { alpha, Box, useTheme } from '@suid/material';
-import { Index, onCleanup, Show, createSignal } from 'solid-js';
+import { alpha, Box, GlobalStyles, useTheme } from '@suid/material';
+import { Index, onCleanup, onMount, Show, createEffect, createSignal } from 'solid-js';
+import SelectionArea from '@viselect/vanilla';
 import {
   moveItemsToIndex,
   movePage,
@@ -52,22 +52,6 @@ interface DragState {
   insertIndex: number;
 }
 
-interface MarqueeGesture {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  lastX: number;
-  lastY: number;
-  baseIds: string[];
-}
-
-interface MarqueeRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
 }
@@ -83,14 +67,13 @@ export default function PrintEditor(props: PrintEditorProps) {
   let scrollerRef: HTMLDivElement | undefined;
   let dragState: DragState | null = null;
   let dragDropped = false;
-  let marqueeGesture: MarqueeGesture | null = null;
+  let selectionArea: SelectionArea | undefined;
+  let marqueeBaseIds: string[] = [];
+  let marqueeAdditive = false;
   let autoScrollPoint: { x: number; y: number } | null = null;
-  let lastScrollTop = 0;
-  let lastScrollLeft = 0;
   let scrollFrame = 0;
   const [previewDocument, setPreviewDocument] = createSignal<PrintDocument | null>(null);
   const [draggingIds, setDraggingIds] = createSignal<string[]>([]);
-  const [marquee, setMarquee] = createSignal<MarqueeRect | null>(null);
 
   const activeDocument = () => previewDocument() ?? props.document;
   const capacity = () => Math.max(1, props.document.layout.columns * props.document.layout.rows);
@@ -300,110 +283,57 @@ export default function PrintEditor(props: PrintEditorProps) {
     }
   }
 
-  function updateMarquee(clientX: number, clientY: number) {
-    const gesture = marqueeGesture;
-    if (!gesture) return;
-    // 矩形用客户端坐标 + fixed 渲染：绝对定位子元素会撑大滚动区的可溢出范围。
-    setMarquee({
-      x: Math.min(gesture.startX, clientX),
-      y: Math.min(gesture.startY, clientY),
-      width: Math.abs(clientX - gesture.startX),
-      height: Math.abs(clientY - gesture.startY),
-    });
-    const left = Math.min(gesture.startX, clientX);
-    const top = Math.min(gesture.startY, clientY);
-    const right = Math.max(gesture.startX, clientX);
-    const bottom = Math.max(gesture.startY, clientY);
-    const hits = [...document.querySelectorAll<HTMLElement>('[data-print-item-id]')]
-      .filter((element) => {
-        const rect = element.getBoundingClientRect();
-        return (
-          rect.width > 0 &&
-          rect.height > 0 &&
-          rect.left < right &&
-          rect.right > left &&
-          rect.top < bottom &&
-          rect.bottom > top
-        );
-      })
-      .map((element) => element.dataset.printItemId as string);
-    props.onSelectionChange([...new Set([...gesture.baseIds, ...hits])]);
-  }
-
-  function handleScrollerScroll() {
-    const gesture = marqueeGesture;
+  // 框选交给成品库 @viselect/vanilla：矩形渲染、命中、修饰键加选、容器内自动滚动均由库处理。
+  function setupSelectionArea() {
     const scroller = scrollerRef;
-    if (!gesture || !scroller) return;
-    const dy = scroller.scrollTop - lastScrollTop;
-    const dx = scroller.scrollLeft - lastScrollLeft;
-    lastScrollTop = scroller.scrollTop;
-    lastScrollLeft = scroller.scrollLeft;
-    if (dx === 0 && dy === 0) return;
-    // 起点锚定内容：滚动时随内容平移，矩形保持覆盖同一批内容区域。
-    gesture.startX -= dx;
-    gesture.startY -= dy;
-    updateMarquee(gesture.lastX, gesture.lastY);
-  }
-
-  createEventListener(() => scrollerRef, 'scroll', handleScrollerScroll);
-
-  function cleanupMarquee() {
-    const gesture = marqueeGesture;
-    marqueeGesture = null;
-    setMarquee(null);
-    if (gesture && scrollerRef?.hasPointerCapture(gesture.pointerId)) {
-      scrollerRef.releasePointerCapture(gesture.pointerId);
-    }
-  }
-
-  function handleScrollerPointerDown(event: PointerEvent) {
-    // 框选在滚动区层级发起：可跨页、可越过纸张边界，overlay 不被单张纸裁切。
-    if (event.pointerType !== 'mouse') return;
-    const target = event.target as HTMLElement | null;
-    if (target?.closest('[data-print-item-id], button, [role="button"], a, input, [data-print-selection-bar]')) return;
-    if (!scrollerRef) return;
-    if (marqueeGesture) cleanupMarquee();
-    event.preventDefault();
-    const additive = event.shiftKey || event.ctrlKey || event.metaKey;
-    marqueeGesture = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      baseIds: additive ? props.selectedIds : [],
+    if (!scroller || selectionArea) return;
+    selectionArea = new SelectionArea({
+      container: scroller,
+      boundaries: scroller,
+      selectables: '[data-print-scroll-area] [data-print-item-id]',
+      behaviour: {
+        intersect: 'touch',
+        startThreshold: 3,
+        scrolling: { speedDivider: 10, manualSpeed: 10, startScrollMargins: { x: 24, y: 24 } },
+      },
+      features: { touch: false, singleTap: { allow: false }, deselectOnBlur: false },
+    });
+    selectionArea.on('beforestart', ({ event }) => {
+      const target = event?.target as HTMLElement | null;
+      if (target?.closest('[data-print-item-id], button, [role="button"], a, input, [data-print-selection-bar]')) {
+        return false;
+      }
+      marqueeAdditive = !!event && (event.shiftKey || event.ctrlKey || event.metaKey);
+      marqueeBaseIds = marqueeAdditive ? props.selectedIds : [];
+      return true;
+    });
+    selectionArea.on('start', () => {
+      if (!marqueeAdditive) props.onSelectionChange([]);
+    });
+    const applySelection = ({ store }: { store: { selected: Element[] } }) => {
+      const ids = store.selected.map((element) => (element as HTMLElement).dataset.printItemId as string);
+      props.onSelectionChange(marqueeAdditive ? [...new Set([...marqueeBaseIds, ...ids])] : ids);
     };
-    lastScrollTop = scrollerRef.scrollTop;
-    lastScrollLeft = scrollerRef.scrollLeft;
-    if (!additive) props.onSelectionChange([]);
-    try {
-      scrollerRef.setPointerCapture(event.pointerId);
-    } catch {
-      // Some WebViews reject capture for already-released pointers.
-    }
-    updateMarquee(event.clientX, event.clientY);
+    selectionArea.on('move', applySelection);
+    selectionArea.on('stop', applySelection);
   }
 
-  function handleScrollerPointerMove(event: PointerEvent) {
-    const gesture = marqueeGesture;
-    if (!gesture || event.pointerId !== gesture.pointerId) return;
-    gesture.lastX = event.clientX;
-    gesture.lastY = event.clientY;
-    updateMarquee(event.clientX, event.clientY);
-  }
+  onMount(setupSelectionArea);
 
-  function handleScrollerPointerUp(event: PointerEvent) {
-    if (!marqueeGesture || event.pointerId !== marqueeGesture.pointerId) return;
-    cleanupMarquee();
-  }
+  createEffect(() => {
+    props.document;
+    selectionArea?.resolveSelectables();
+  });
 
-  function handleScrollerLostPointerCapture(event: PointerEvent) {
-    if (!marqueeGesture || event.pointerId !== marqueeGesture.pointerId) return;
-    cleanupMarquee();
-  }
+  createEffect(() => {
+    props.selectedIds;
+    // 外部选中变化（点选/删除/撤销）时重置库内存储，加选基底由 marqueeBaseIds 自行维护。
+    selectionArea?.clearSelection(true, true);
+  });
 
   onCleanup(() => {
-    cleanupMarquee();
+    selectionArea?.destroy();
+    selectionArea = undefined;
     stopAutoScroll();
     cancelFlip();
     if (dragState) {
@@ -442,12 +372,8 @@ export default function PrintEditor(props: PrintEditorProps) {
         scrollerRef = element;
       }}
       data-print-scroll-area="true"
-      onPointerDown={handleScrollerPointerDown}
-      onPointerMove={handleScrollerPointerMove}
-      onPointerUp={handleScrollerPointerUp}
-      onPointerCancel={handleScrollerPointerUp}
-      onLostPointerCapture={handleScrollerLostPointerCapture}
       sx={{
+        position: 'relative',
         height: '100%',
         minHeight: 0,
         overflow: 'auto',
@@ -523,25 +449,17 @@ export default function PrintEditor(props: PrintEditorProps) {
           <AddIcon />
         </Box>
       </Show>
-      <Show when={marquee()}>
-        {(rect) => (
-          <Box
-            data-print-marquee="true"
-            sx={{
-              position: 'fixed',
-              left: rect().x,
-              top: rect().y,
-              width: rect().width,
-              height: rect().height,
-              border: '1px solid',
-              borderColor: 'primary.main',
-              backgroundColor: alpha(theme.palette.primary.main, 0.08),
-              pointerEvents: 'none',
-              zIndex: 5,
-            }}
-          />
-        )}
-      </Show>
+      <GlobalStyles
+        styles={{
+          '.selection-area': {
+            border: '1px solid',
+            borderColor: 'primary.main',
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            pointerEvents: 'none',
+            zIndex: 5,
+          },
+        }}
+      />
     </Box>
   );
 }

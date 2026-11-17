@@ -52,6 +52,7 @@
     "@suid/system": "^0.14.0",
     "@suid/types": "^0.8.0",
     "@tauri-apps/api": "^2.12.1",
+    "@viselect/vanilla": "^3.10.1",
     "es-toolkit": "^1.52.0",
     "nanoid": "^6.0.1",
     "pdf-lib": "^1.17.1",
