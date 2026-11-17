@@ -85,3 +85,16 @@
   修复：handleScrollerPointerMove 加 (0,0) 守卫。回归断言：静止按住注入 (0,0) move → 矩形 2×2、scrollTop 不变。
 - 11-17/20:02 度量：`node tmp-research.local/test.cjs` **45/45 通过**；`npx rs check` 通过；
   `pnpm build:browser` 成功（1045.7 kB）。
+- 11-17/20:29 用户复报"起点=终点仍坏"并要求还原上轮修复。真根因收敛：**setPointerCapture 本身**——
+  用户浏览器捕获后 pointermove 坐标退化为 (0,0)：加 (0,0) 守卫则全部移动被吞、矩形冻结在起点
+  （"起点=终点"症状）；不加守卫则画成巨矩形（更早症状）。两症状同源，headless 合成事件不触发故复现不到。
+  处置：按用户要求**还原 (0,0) 守卫**；**移除 setPointerCapture/releasePointerCapture/lostpointercapture**，
+  改 window 级 pointermove/pointerup/pointercancel 监听（滚区外移动/抬起同样可达）。
+  保留 3px 移动阈值与"未移动不更新矩形"的滚动锚定（防护静止边缘单击 runaway，与该根因无关）。
+  回归断言改为：框选期间 `scroller.hasPointerCapture(1)===false` 且静止矩形 2×2、scrollTop 不变。
+  过程失误自记：补 window 监听时漏 import makeEventListener，后台 tsc 跑在编辑落盘前未报，
+  由 pageerror（makeEventListener is not defined）捕获后补齐。
+- 11-17/20:29 另：按用户要求删除 mockups/（hook 禁递归 rm → mv 至 quarantine/2026-11-17-mockups，
+  复核 agent 哈希比对 HEAD blob 一致、全仓无引用后逐文件 rm + rmdir 清除；git 删除未提交）。
+- 11-17/20:29 度量：`node tmp-research.local/test.cjs` **45/45 通过**；`npx rs check` 通过；
+  `pnpm build:browser` 成功（1045.6 kB）。
